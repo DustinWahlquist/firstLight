@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/providers.dart';
 import '../../models/bird_card.dart';
 import '../../models/catch_log.dart';
@@ -22,6 +25,21 @@ class BirdDetailScreen extends ConsumerStatefulWidget {
 
 class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
   bool _showAllLogs = false;
+  String? _lineArtUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _lineArtUrl = widget.card.lineArtUrl;
+    if (_lineArtUrl == null) _loadLineArt();
+  }
+
+  Future<void> _loadLineArt() async {
+    final url = await ref
+        .read(supabaseServiceProvider)
+        .fetchSpeciesLineArt(widget.card.speciesName);
+    if (mounted && url != null) setState(() => _lineArtUrl = url);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +63,7 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Center(child: _TradingCard(card: card)),
+          Center(child: _TradingCard(card: card, lineArtUrl: _lineArtUrl)),
           const SizedBox(height: 16),
           _SectionCard(
             label: 'CATCH INFO',
@@ -60,6 +78,51 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
           _SectionCard(
             label: 'ABOUT',
             child: _AboutSection(card: card),
+          ),
+          const SizedBox(height: 12),
+          catchLogs.maybeWhen(
+            data: (logs) {
+              final pins = logs
+                  .where((l) => l.latitude != null && l.longitude != null)
+                  .toList();
+              if (pins.isEmpty) return const SizedBox.shrink();
+              final avgLat = pins.map((l) => l.latitude!).reduce((a, b) => a + b) / pins.length;
+              final avgLng = pins.map((l) => l.longitude!).reduce((a, b) => a + b) / pins.length;
+              return _SectionCard(
+                label: 'CATCH LOCATIONS',
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                  child: SizedBox(
+                    height: 180,
+                    child: FlutterMap(
+                      options: MapOptions(
+                        initialCenter: LatLng(avgLat, avgLng),
+                        initialZoom: pins.length == 1 ? 8 : 4,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.murmuration.murmuration',
+                        ),
+                        MarkerLayer(
+                          markers: pins.map((l) => Marker(
+                            point: LatLng(l.latitude!, l.longitude!),
+                            width: 28,
+                            height: 28,
+                            child: Icon(
+                              Icons.flutter_dash,
+                              size: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
           ),
           const SizedBox(height: 12),
           catchLogs.when(
@@ -93,8 +156,9 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
 }
 
 class _TradingCard extends StatelessWidget {
-  const _TradingCard({required this.card});
+  const _TradingCard({required this.card, this.lineArtUrl});
   final BirdCard card;
+  final String? lineArtUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -129,16 +193,30 @@ class _TradingCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CustomPaint(painter: _StripePainter()),
-                  Center(
-                    child: Text(
-                      'bird illustration',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                        color: theme.colorScheme.onSurfaceVariant,
+                  if (lineArtUrl != null)
+                    SvgPicture.network(
+                      lineArtUrl!,
+                      fit: BoxFit.contain,
+                      placeholderBuilder: (_) => const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    CustomPaint(painter: _StripePainter()),
+                    Center(
+                      child: Text(
+                        'illustration pending',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -203,6 +281,7 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      color: theme.colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -241,30 +320,33 @@ class _CatchInfoGrid extends StatelessWidget {
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _InfoCell(
                   label: 'Catches',
                   value: '${card.catchCount}',
                   theme: theme,
+                  centered: true,
                 ),
                 const SizedBox(height: 12),
                 _InfoCell(
                   label: 'First seen',
                   value: dateStr,
                   theme: theme,
+                  centered: true,
                 ),
               ],
             ),
           ),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _InfoCell(
                   label: 'Level',
                   value: '${card.level}',
                   theme: theme,
+                  centered: true,
                 ),
                 const SizedBox(height: 12),
                 _InfoCell(
@@ -272,6 +354,7 @@ class _CatchInfoGrid extends StatelessWidget {
                   value: card.firstCatchLocation,
                   theme: theme,
                   small: true,
+                  centered: true,
                 ),
               ],
             ),
@@ -288,25 +371,31 @@ class _InfoCell extends StatelessWidget {
     required this.value,
     required this.theme,
     this.small = false,
+    this.centered = false,
   });
   final String label;
   final String value;
   final ThemeData theme;
   final bool small;
+  final bool centered;
 
   @override
   Widget build(BuildContext context) {
+    final align = centered ? TextAlign.center : TextAlign.start;
+    final cross = centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: cross,
       children: [
         Text(
           label,
+          textAlign: align,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
           value,
+          textAlign: align,
           style: small ? theme.textTheme.bodySmall : theme.textTheme.headlineSmall,
         ),
       ],

@@ -29,6 +29,13 @@ dependencies:
   cached_network_image: ^3.4.1
   cupertino_icons: ^1.0.8
 
+  # Map
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # SVG rendering
+  flutter_svg: ^2.0.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

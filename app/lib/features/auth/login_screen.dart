@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,12 +14,16 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
   bool _sent = false;
+  bool _passwordMode = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -39,6 +47,123 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your email first')),
+      );
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final url = Uri.parse('$supabaseUrl/auth/v1/recover');
+      final httpClient = HttpClient();
+      final request = await httpClient.postUrl(url);
+      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      request.headers.set('apikey', supabaseAnonKey);
+      request.write(jsonEncode({'email': email}));
+      final response = await request.close();
+      final body = await response.transform(const Utf8Decoder()).join();
+      httpClient.close();
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset email sent — check your inbox')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error ${response.statusCode}: $body')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _signInWithPassword() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) return;
+
+    setState(() => _loading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _showDevLinkDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Paste magic link'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'https://...supabase.co/auth/v1/verify?token=...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final url = controller.text.trim();
+              final uri = Uri.tryParse(url);
+              final token = uri?.queryParameters['token'];
+              final typeStr = uri?.queryParameters['type'] ?? 'magiclink';
+              if (token == null || token.isEmpty) return;
+              Navigator.of(ctx).pop();
+              setState(() => _loading = true);
+              try {
+                final type = typeStr == 'recovery'
+                    ? OtpType.recovery
+                    : OtpType.magiclink;
+                await Supabase.instance.client.auth.verifyOTP(
+                  tokenHash: token,
+                  type: type,
+                );
+              } on AuthException catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(content: Text(e.message)),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _loading = false);
+              }
+            },
+            child: const Text('Sign In'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -71,7 +196,63 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
-              if (_sent) ...[
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (_) =>
+                    _passwordMode ? _signInWithPassword() : _sendMagicLink(),
+              ),
+              if (_passwordMode) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  autofillHints: const [AutofillHints.password],
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  onSubmitted: (_) => _signInWithPassword(),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loading ? null : _signInWithPassword,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Sign In'),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _passwordMode = false;
+                        _passwordController.clear();
+                      }),
+                      child: const Text('Use magic link'),
+                    ),
+                    TextButton(
+                      onPressed: _loading ? null : _resetPassword,
+                      child: const Text('Forgot password?'),
+                    ),
+                  ],
+                ),
+              ] else if (_sent) ...[
+                const SizedBox(height: 16),
                 Card(
                   color: theme.colorScheme.primaryContainer,
                   child: const Padding(
@@ -88,16 +269,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('Use a different email'),
                 ),
               ] else ...[
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _sendMagicLink(),
-                ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _loading ? null : _sendMagicLink,
@@ -108,6 +279,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('Send Magic Link'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => setState(() => _passwordMode = true),
+                  child: const Text('Sign in with password'),
+                ),
+              ],
+              if (kDebugMode) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => _showDevLinkDialog(context),
+                  child: const Text('Dev: paste magic link'),
                 ),
               ],
             ],

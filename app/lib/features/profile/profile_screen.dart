@@ -1,9 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 import '../aviary/aviary_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -15,6 +19,13 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _notifications = false;
 
+  Future<void> _openEditProfile(BuildContext context) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+    if (updated == true && mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -22,7 +33,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = Supabase.instance.client.auth.currentUser;
 
     final email = user?.email ?? '';
-    final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
+    final displayName = user?.userMetadata?['display_name'] as String? ?? '';
+    final avatarUrl = user?.userMetadata?['avatar_url'] as String?;
+    final initial = displayName.isNotEmpty
+        ? displayName[0].toUpperCase()
+        : email.isNotEmpty
+            ? email[0].toUpperCase()
+            : '?';
     final createdAt = user?.createdAt != null
         ? DateTime.tryParse(user!.createdAt)
         : null;
@@ -35,6 +52,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _openEditProfile(context),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Divider(
@@ -53,17 +76,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Text(
-                    initial,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
+                  backgroundImage: avatarUrl != null
+                      ? CachedNetworkImageProvider(avatarUrl)
+                      : null,
+                  child: avatarUrl == null
+                      ? Text(
+                          initial,
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 12),
-                Text(email, style: theme.textTheme.titleLarge),
+                Text(
+                  displayName.isNotEmpty ? displayName : email,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge,
+                ),
+                if (displayName.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 if (watcherSince.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -139,46 +180,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
           ),
           const SizedBox(height: 12),
-          _SectionCard(
-            label: 'MAP',
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 140,
-                  child: ClipRect(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CustomPaint(painter: _StripePainter()),
-                        const Center(
-                          child: Text(
-                            'first-catch location map',
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              color: Color(0xFF4D4742),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                aviary.maybeWhen(
-                  data: (cards) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${cards.length} states',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+          aviary.maybeWhen(
+            data: (cards) {
+              final pins = cards
+                  .where((c) => c.firstCatchLatitude != null && c.firstCatchLongitude != null)
+                  .toList();
+              return _SectionCard(
+                label: 'MAP',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      child: SizedBox(
+                        height: 200,
+                        child: pins.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Log catches to see your map',
+                                  style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    color: Color(0xFF4D4742),
+                                  ),
+                                ),
+                              )
+                            : FlutterMap(
+                                options: MapOptions(
+                                  initialCenter: LatLng(
+                                    pins.map((c) => c.firstCatchLatitude!).reduce((a, b) => a + b) / pins.length,
+                                    pins.map((c) => c.firstCatchLongitude!).reduce((a, b) => a + b) / pins.length,
+                                  ),
+                                  initialZoom: 5,
+                                ),
+                                children: [
+                                  TileLayer(
+                                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                    userAgentPackageName: 'com.murmuration.murmuration',
+                                  ),
+                                  MarkerLayer(
+                                    markers: pins.map((c) => Marker(
+                                      point: LatLng(c.firstCatchLatitude!, c.firstCatchLongitude!),
+                                      width: 28,
+                                      height: 28,
+                                      child: Icon(
+                                        Icons.flutter_dash,
+                                        size: 24,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    )).toList(),
+                                  ),
+                                ],
+                              ),
                       ),
-                    );
-                  },
-                  orElse: () => const SizedBox(height: 12),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: Text(
+                        '${pins.length} location${pins.length == 1 ? '' : 's'} mapped',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              );
+            },
+            orElse: () => _SectionCard(
+              label: 'MAP',
+              child: const SizedBox(height: 200),
             ),
           ),
           const SizedBox(height: 12),
@@ -413,6 +481,7 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      color: theme.colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -463,23 +532,3 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-class _StripePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFDAD4C9)
-      ..strokeWidth = 1.0;
-
-    const spacing = 14.0;
-    for (double i = -size.height; i < size.width + size.height; i += spacing) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_StripePainter oldDelegate) => false;
-}

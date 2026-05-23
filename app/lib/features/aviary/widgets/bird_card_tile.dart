@@ -14,6 +14,7 @@ class BirdCardTile extends StatelessWidget {
     final xpProgress = card.xp / xpToNext;
 
     return Card(
+      color: theme.colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: onTap,

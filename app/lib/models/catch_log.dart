@@ -7,6 +7,8 @@ class CatchLog {
     required this.sightingRarity,
     required this.location,
     required this.xpAwarded,
+    this.latitude,
+    this.longitude,
     this.screenshotUrl,
   });
 
@@ -17,6 +19,8 @@ class CatchLog {
   final String sightingRarity;
   final String location;
   final int xpAwarded;
+  final double? latitude;
+  final double? longitude;
   final String? screenshotUrl;
 
   factory CatchLog.fromJson(Map<String, dynamic> json) => CatchLog(
@@ -27,6 +31,8 @@ class CatchLog {
         sightingRarity: json['sighting_rarity'] as String? ?? 'Common',
         location: json['location'] as String? ?? '',
         xpAwarded: json['xp_awarded'] as int? ?? 0,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
         screenshotUrl: json['screenshot_url'] as String?,
       );
 }

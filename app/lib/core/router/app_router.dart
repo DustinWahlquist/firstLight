@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/reset_password_screen.dart';
 import '../../features/aviary/aviary_screen.dart';
 import '../../features/aviary/bird_detail_screen.dart';
 import '../../features/card_reveal/card_reveal_screen.dart';
@@ -14,9 +15,16 @@ import '../shell/app_shell.dart';
 
 class _AuthRefreshNotifier extends ChangeNotifier {
   _AuthRefreshNotifier(Stream<AuthState> stream) {
-    _subscription = stream.listen((_) => notifyListeners());
+    _subscription = stream.listen((authState) {
+      _lastEvent = authState.event;
+      notifyListeners();
+    });
   }
+
   late final StreamSubscription<AuthState> _subscription;
+  AuthChangeEvent? _lastEvent;
+
+  bool get isPasswordRecovery => _lastEvent == AuthChangeEvent.passwordRecovery;
 
   @override
   void dispose() {
@@ -36,8 +44,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: notifier,
     redirect: (context, state) {
       final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
-      final isOnLogin = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
+      final isOnLogin = loc == '/login';
+      final isOnReset = loc == '/reset-password';
+
       if (!isLoggedIn && !isOnLogin) return '/login';
+      if (isLoggedIn && notifier.isPasswordRecovery && !isOnReset) return '/reset-password';
       if (isLoggedIn && isOnLogin) return '/';
       return null;
     },
@@ -45,6 +57,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

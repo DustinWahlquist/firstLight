@@ -1,0 +1,3 @@
+ALTER TABLE bird_cards
+  ADD COLUMN IF NOT EXISTS first_catch_latitude  DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS first_catch_longitude DOUBLE PRECISION;

@@ -16,7 +16,10 @@ class BirdCard {
     required this.facts,
     required this.migrationSpeed,
     required this.endurance,
+    this.firstCatchLatitude,
+    this.firstCatchLongitude,
     this.screenshotUrl,
+    this.lineArtUrl,
     required this.createdAt,
   });
 
@@ -34,7 +37,10 @@ class BirdCard {
   final List<String> facts;
   final int migrationSpeed;
   final int endurance;
+  final double? firstCatchLatitude;
+  final double? firstCatchLongitude;
   final String? screenshotUrl;
+  final String? lineArtUrl;
   final DateTime createdAt;
 
   static const Map<int, int> _xpThresholds = {
@@ -56,7 +62,7 @@ class BirdCard {
   static int xpForNextLevel(int currentLevel) =>
       _xpThresholds[currentLevel + 1] ?? _xpThresholds.values.last;
 
-  BirdCard copyWith({int? xp, int? level, int? catchCount, String? screenshotUrl}) =>
+  BirdCard copyWith({int? xp, int? level, int? catchCount, String? screenshotUrl, String? lineArtUrl}) =>
       BirdCard(
         id: id,
         userId: userId,
@@ -73,6 +79,7 @@ class BirdCard {
         migrationSpeed: migrationSpeed,
         endurance: endurance,
         screenshotUrl: screenshotUrl ?? this.screenshotUrl,
+        lineArtUrl: lineArtUrl ?? this.lineArtUrl,
         createdAt: createdAt,
       );
 
@@ -91,7 +98,10 @@ class BirdCard {
         facts: (json['facts'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
         migrationSpeed: json['migration_speed'] as int? ?? 5,
         endurance: json['endurance'] as int? ?? 3,
+        firstCatchLatitude: (json['first_catch_latitude'] as num?)?.toDouble(),
+        firstCatchLongitude: (json['first_catch_longitude'] as num?)?.toDouble(),
         screenshotUrl: json['screenshot_url'] as String?,
+        lineArtUrl: json['line_art_url'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 

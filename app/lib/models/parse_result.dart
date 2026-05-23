@@ -12,6 +12,9 @@ class ParseResult {
     required this.facts,
     required this.migrationSpeed,
     required this.endurance,
+    this.latitude,
+    this.longitude,
+    this.lineArtUrl,
   });
 
   final String speciesName;
@@ -24,6 +27,9 @@ class ParseResult {
   final List<String> facts;
   final int migrationSpeed;
   final int endurance;
+  final double? latitude;
+  final double? longitude;
+  final String? lineArtUrl;
 
   factory ParseResult.fromJson(Map<String, dynamic> json) => ParseResult(
         speciesName: json['species_name'] as String,
@@ -36,5 +42,8 @@ class ParseResult {
         facts: (json['facts'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
         migrationSpeed: json['migration_speed'] as int? ?? 5,
         endurance: json['endurance'] as int? ?? 3,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        lineArtUrl: json['line_art_url'] as String?,
       );
 }

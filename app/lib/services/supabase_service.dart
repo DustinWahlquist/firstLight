@@ -59,11 +59,14 @@ class SupabaseService {
           'catch_count': 1,
           'first_catch_date': result.date.toIso8601String(),
           'first_catch_location': result.location,
+          'first_catch_latitude': result.latitude,
+          'first_catch_longitude': result.longitude,
           'description': result.description,
           'facts': result.facts,
           'migration_speed': result.migrationSpeed,
           'endurance': result.endurance,
           'screenshot_url': screenshotUrl,
+          'line_art_url': result.lineArtUrl,
         })
         .select()
         .single();
@@ -72,6 +75,8 @@ class SupabaseService {
       screenshotUrl: screenshotUrl,
       sightingRarity: result.sightingRarity,
       location: result.location,
+      latitude: result.latitude,
+      longitude: result.longitude,
       xpAwarded: 0,
     );
     return BirdCard.fromJson(row);
@@ -96,6 +101,8 @@ class SupabaseService {
       screenshotUrl: screenshotUrl,
       sightingRarity: result.sightingRarity,
       location: result.location,
+      latitude: result.latitude,
+      longitude: result.longitude,
       xpAwarded: xpToAdd,
     );
     return BirdCard.fromJson(row);
@@ -107,6 +114,8 @@ class SupabaseService {
     required String sightingRarity,
     required String location,
     required int xpAwarded,
+    double? latitude,
+    double? longitude,
   }) async {
     await _client.from('catch_logs').insert({
       'user_id': _userId,
@@ -115,6 +124,8 @@ class SupabaseService {
       'screenshot_url': screenshotUrl,
       'sighting_rarity': sightingRarity,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'xp_awarded': xpAwarded,
     });
   }
@@ -132,6 +143,33 @@ class SupabaseService {
         .eq('bird_card_id', birdCardId)
         .order('caught_at', ascending: false);
     return rows.map(CatchLog.fromJson).toList();
+  }
+
+  Future<String> uploadAvatar(File file) async {
+    final path = '$_userId/avatar.jpg';
+    await _client.storage.from('screenshots').upload(
+      path,
+      file,
+      fileOptions: const FileOptions(upsert: true),
+    );
+    return _client.storage.from('screenshots').getPublicUrl(path);
+  }
+
+  Future<void> updateProfile({String? displayName, String? avatarUrl}) async {
+    final data = <String, dynamic>{};
+    if (displayName != null) data['display_name'] = displayName;
+    if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+    if (data.isEmpty) return;
+    await _client.auth.updateUser(UserAttributes(data: data));
+  }
+
+  Future<String?> fetchSpeciesLineArt(String speciesName) async {
+    final row = await _client
+        .from('bird_species')
+        .select('line_art_url')
+        .eq('species_name', speciesName)
+        .maybeSingle();
+    return row?['line_art_url'] as String?;
   }
 
   Future<void> signOut() => _client.auth.signOut();
