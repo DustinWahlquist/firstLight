@@ -1,4 +1,4 @@
-# PRD: Merlin Card Game
+# PRD: First Light
 
 **Version:** 0.1 (Draft)
 **Author:** Dustin Wahlquist
@@ -35,7 +35,6 @@ The core fantasy: you are a bird watcher on a quest to become the **greatest bir
 | **First Light** | The day phase of each round — migration movement and offensive actions |
 | **Night** | The night phase of each round — deck draw and card deployment |
 
-> Note: "Flock" is a working name for the deck — alternatives to explore: *Wing*, *Roost*, *Flight*. "Arena" vs. "Atrium" vs. "Aviarium" are under consideration for the competitive play space name.
 
 ---
 
@@ -73,8 +72,8 @@ Each match is divided into rounds. Each round has two phases: **First Light** (d
 
 First Light is the active movement and combat phase.
 
-- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats and any Support boosts.
-- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds.
+- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats and any Support boosts. Every bird in the Roost drains 1 Endurance per round simply from flying.
+- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Taking an offensive action drains 1 Endurance from the acting bird.
 - Turn order is determined by the Initiative roll (see 5.3).
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
@@ -85,6 +84,7 @@ Night is the recovery and setup phase.
 
 - **Draw:** Watchers draw cards from their personal Flock deck.
 - **Deploy:** Place birds onto the Roost to be active in the next First Light.
+- Turn order during Night carries over from First Light.
 
 ### 5.3 Initiative
 
@@ -93,17 +93,15 @@ At the start of each First Light, Watchers roll to determine turn order.
 - Each Watcher rolls a die and applies their **Initiative modifier** (derived from individual bird skills).
 - A flat penalty is applied based on active Flock size:
 
-| Flock Size | Initiative Penalty |
-|---|---|
-| Small | 0 |
-| Medium | −1 |
-| Large | −2 |
-| Extra Large | −3 |
+| Flock Size | Bird Count | Initiative Penalty |
+|---|---|---|
+| Small | 1–2 | 0 |
+| Medium | 3–4 | −1 |
+| Large | 5–6 | −2 |
+| Extra Large | 7–8+ | −3 |
 
 - **Exempt birds:** Birds with traits like *Silent Riser* do not count toward the Flock Size threshold — they join the Flock without slowing morning coordination.
-- Highest roll acts first. Tiebreaker: TBD.
-
-> Exact bird-count breakpoints per tier are TBD pending playtesting.
+- Highest roll acts first. Tiebreaker goes to the Watcher with the fewest birds in their Roost.
 
 ---
 
@@ -121,16 +119,24 @@ At the start of each First Light, Watchers roll to determine turn order.
 - Cards start at **Level 1** when first acquired.
 - Each additional real-world catch (up to 1/day) awards XP, leveling the card up over time.
 - Higher levels unlock:
-  - Additional **moves** (up to a max hand size, similar to Pokémon's 4-move limit)
+  - Additional **moves** (up to 3 slots max)
   - Alternate **card art / skins**
   - Improved **base stats**
 - Leveling is **XP-based**, not catch-count based, to support future flexibility (e.g., rare birds give more XP per catch).
 
 ### 6.3 Card Rarity
 
-- Rarity is tied to **real-world bird rarity and geographic distribution** — rare birds in Merlin yield higher-XP cards with better base stats.
-- Rare birds = more XP per catch, more powerful moves, and potentially exclusive aesthetics.
-- **Endangered species:** TBD — consider whether to include them as ultra-rare cards to promote conservation awareness, or exclude them to avoid gamifying endangered populations. Recommended: include with in-app educational prompts and conservation messaging.
+- Rarity is tied to **real-world bird rarity and geographic distribution** — pulled dynamically from Merlin, which already tracks this data.
+- XP per catch scales with rarity:
+
+| Rarity | XP per Catch |
+|---|---|
+| Common | 5 |
+| Somewhat Rare | 10 |
+| Ultra Rare | 15 |
+
+- Rare birds also have more powerful moves and potentially exclusive aesthetics.
+- **Endangered species** are included with in-app educational prompts and conservation messaging.
 
 ### 6.4 Card Anatomy
 
@@ -144,7 +150,15 @@ Each card displays:
 - **Rarity indicator**
 - Player's personal catch count for that species
 
-### 6.5 Physical Cards
+### 6.5 Bird Lifecycle (In-Match)
+
+Once deployed to the Roost, a bird remains active until its Endurance is fully depleted — then it moves to the discard pile and is out of the match.
+
+**Hand → Roost → Discard**
+
+Every bird in the Roost drains 1 Endurance per round from flying. Taking an offensive action drains an additional 1 Endurance. A bird that attacks in a round loses 2 Endurance total. High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
+
+### 6.6 Physical Cards
 
 - **Print-at-home:** App exports printable card sheets with current stats
 - **Professionally printed:** Future physical product / merchandise integration
@@ -164,7 +178,7 @@ Each card displays:
 
 ### 7.2 Move Slots
 
-- Each bird card can hold a **limited number of moves** (exact number TBD — likely 3–4).
+- Each bird card can hold up to **3 moves**.
 - New moves unlock at level milestones.
 - Players choose which moves to keep when a new one is unlocked, creating strategic decisions.
 - Move quality is tied to **bird classification** (e.g., raptors skew offense, shorebirds skew support, songbirds could be support/utility).
@@ -175,13 +189,13 @@ Each card displays:
 
 ### 8.1 Core Win Condition
 
-The game board represents a **bird migration path**. The goal is to **migrate your flock a total of 10,000 kilometers** before your opponent does.
+The game board represents a **bird migration path**. The goal is to **migrate your flock a total of 5,000 kilometers** before your opponent does.
 
 - **1 round = 1 in-game day (First Light phase + Night phase)**
 - **Migration Speed** is the primary stat determining how far your flock moves each round
 - Modifiers:
   - **Drafting birds** (Support type) → boost migration speed
-  - **Endurance** stat → sustains speed over long matches
+  - **Endurance** stat → limits how many days a bird can stay active; depleted birds move to discard
   - **Attracting birds** → pull in additional card/resource advantages
   - **Support power** → enables overnight travel (move during opponent's turn)
 
@@ -221,11 +235,11 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 
 ## 10. Trading
 
-- **In-person only.** Cards can only be traded peer-to-peer via proximity/QR code, not over the internet.
+- **In-person only, always.** Cards can only be traded peer-to-peer via proximity/QR code. Online trading will never be available.
 - **Trade consequences:**
   - When you trade a card away, you **lose it entirely** — including all accumulated levels and XP.
   - If you later re-catch that bird in Merlin, you start a new Level 1 card from scratch.
-  - If you receive a card you already own (same species), the **higher-level card wins** — but whether XP stacks is TBD. Recommend: XP merges, preserving progress.
+  - If you receive a card you already own (same species), the **higher-level card wins** and the received card's XP is added to your existing card. If the merged total crosses a level threshold, a level-up walkthrough triggers to apply the new level and any unlocked moves.
 - **Strategic intent:** Trading is high-stakes and meaningful — rare/leveled cards are genuinely valuable.
 
 ---
@@ -238,13 +252,14 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 - Aviary size (total unique species)
 - Match record (W/L/D)
 - Migration total (cumulative km migrated across all matches)
-- Favorite Flock composition
-- Rarest bird owned
+- Map view: heatmap or pins of first-catch locations across the full Aviary and active Flock
+
 
 ### 11.2 Bird Stats (Per Card)
 
 - Total XP / current level
 - Number of real-world catches
+- Location and date of first catch
 - Games played with this bird
 - Win rate when this bird is in the active Flock
 - Move history
@@ -253,8 +268,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 
 - On first launch: connect Merlin account → app imports entire life list
 - All lifers become Level 1 cards in the Aviary instantly
-- Cards for species caught multiple times before joining start with **bonus XP** reflecting catch history (but not full levels — exact formula TBD)
-- Tutorial match with a curated starter Flock
+- Cards for species caught multiple times before joining start with **bonus XP** reflecting catch history- Tutorial match with a curated starter Flock; starter cards are visually marked as such and cannot be leveled up — they fill out the Flock until the player has enough lifers to replace them with real cards
 
 ---
 
@@ -264,7 +278,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 - **Life list sync:** Pull full lifer history on first connect; incremental sync on app open
 - **Daily catch sync:** Background sync or user-triggered refresh to pick up same-day catches
 - **Data used:** Species name, date first caught, location (region/country), total catch count
-- **Offline mode:** Aviary and Flock management works offline; battle sync requires connectivity
+
 
 ---
 
@@ -307,19 +321,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 
 | # | Question | Priority |
 |---|---|---|
-| 1 | Final name for the deck ("Flock", "Roost", "Wing"?) | High |
-| 2 | Final name for competitive play space ("Arena", "Atrium", "Aviarium"?) | Medium |
-| 3 | Exact move slot count per card (3 or 4?) | High |
-| 4 | XP formula for importing existing Merlin life list on first login | High |
-| 5 | Whether trading a duplicate gives merged XP or just takes the higher card | High |
-| 6 | Whether endangered species are included, and how they're framed | Medium |
-| 7 | Exact win condition tuning (10k km? Different for casual vs. competitive?) | High |
-| 8 | How physical play authenticates moves without always-on app access | Medium |
-| 9 | Whether online trading (non-in-person) is ever unlocked | Low |
-| 10 | Whether geographic rarity is dynamic (bird ranges shift seasonally) | Low |
-| 11 | Exact bird-count breakpoints for Small / Medium / Large / XL Flock tiers | High |
-| 12 | Tiebreaker rule for identical Initiative rolls | Medium |
-| 13 | Night phase turn order — carry over from First Light, or re-roll? | Medium |
+| 1 | Which cards or abilities allow retrieval from the discard pile? | High |
 
 ---
 
@@ -331,6 +333,42 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 - Integration with eBird or other birding platforms (post-Merlin)
 - AR card reveal / battle overlay
 - Animated card art
+
+---
+
+## 18. MVP Scope
+
+The MVP focuses exclusively on the card creation and leveling loop — proving the core fantasy of turning real birding into cards — before building the battle system.
+
+### 18.1 Platform
+
+- iOS + Android via a single Flutter codebase
+
+### 18.2 Core Flow
+
+1. User imports a Merlin screenshot (camera roll or share sheet)
+2. Claude vision API parses the screenshot: bird species, rarity, date, location
+3. **New lifer:** Card created at Level 1 and added to the Aviary with a card reveal
+4. **Existing species:** XP awarded based on rarity (5 / 10 / 15); level-up walkthrough triggers if a threshold is crossed
+5. **1 catch per bird per day** enforced — duplicate submissions within the same calendar day are rejected
+
+### 18.3 Card Art
+
+- Placeholder art in MVP
+- Every parsed screenshot is stored in a DB, passively building a dataset of real bird imagery to power AI-generated card art in future releases
+
+### 18.4 Aviary
+
+- Basic browser to view collected cards with level, XP bar, and first-catch location and date
+
+### 18.5 Out of MVP Scope
+
+- Flock building and deck management
+- All gameplay (First Light, Night, Initiative, migration, combat)
+- Trading
+- Multiplayer and matchmaking
+- Physical card printing
+- Full Merlin OAuth integration
 
 ---
 
