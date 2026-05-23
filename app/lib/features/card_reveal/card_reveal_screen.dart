@@ -70,11 +70,18 @@ class _CardRevealScreenState extends State<CardRevealScreen>
                             const SizedBox(height: 16),
                             Text(card.speciesName, style: theme.textTheme.headlineMedium),
                             const SizedBox(height: 8),
-                            Text(card.rarity.label, style: theme.textTheme.labelLarge),
+                            Text(
+                              card.rarity.label,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               card.firstCatchLocation,
-                              style: theme.textTheme.bodySmall,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),

@@ -170,7 +170,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          '${cards.length} locations',
+                          '${cards.length} states',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -186,6 +186,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             opacity: 0.5,
             child: _SectionCard(
               label: 'MATCH RECORD',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Coming soon',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 child: Row(
@@ -393,9 +404,10 @@ class _DeleteConfirmSheetState extends State<_DeleteConfirmSheet> {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.label, required this.child});
+  const _SectionCard({required this.label, required this.child, this.trailing});
   final String label;
   final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -406,12 +418,19 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                letterSpacing: 1.2,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                ?trailing,
+              ],
             ),
           ),
           child,
