@@ -52,21 +52,33 @@ class SupabaseService {
         .insert({
           'user_id': _userId,
           'species_name': result.speciesName,
+          'scientific_name': result.scientificName,
           'rarity': result.rarity.label,
           'level': 1,
           'xp': 0,
           'catch_count': 1,
           'first_catch_date': result.date.toIso8601String(),
           'first_catch_location': result.location,
+          'description': result.description,
+          'facts': result.facts,
+          'migration_speed': result.migrationSpeed,
+          'endurance': result.endurance,
           'screenshot_url': screenshotUrl,
         })
         .select()
         .single();
-    await _logCatch(row['id'] as String, screenshotUrl);
+    await _logCatch(
+      birdCardId: row['id'] as String,
+      screenshotUrl: screenshotUrl,
+      sightingRarity: result.sightingRarity,
+      location: result.location,
+      xpAwarded: 0,
+    );
     return BirdCard.fromJson(row);
   }
 
-  Future<BirdCard> awardXp(BirdCard card, int xpToAdd, String screenshotUrl) async {
+  Future<BirdCard> awardXp(BirdCard card, ParseResult result, String screenshotUrl) async {
+    final xpToAdd = result.rarity.xpPerCatch;
     final newXp = card.xp + xpToAdd;
     final newLevel = BirdCard.levelForXp(newXp);
     final row = await _client
@@ -79,16 +91,31 @@ class SupabaseService {
         .eq('id', card.id)
         .select()
         .single();
-    await _logCatch(card.id, screenshotUrl);
+    await _logCatch(
+      birdCardId: card.id,
+      screenshotUrl: screenshotUrl,
+      sightingRarity: result.sightingRarity,
+      location: result.location,
+      xpAwarded: xpToAdd,
+    );
     return BirdCard.fromJson(row);
   }
 
-  Future<void> _logCatch(String birdCardId, String screenshotUrl) async {
+  Future<void> _logCatch({
+    required String birdCardId,
+    required String screenshotUrl,
+    required String sightingRarity,
+    required String location,
+    required int xpAwarded,
+  }) async {
     await _client.from('catch_logs').insert({
       'user_id': _userId,
       'bird_card_id': birdCardId,
       'caught_at': DateTime.now().toIso8601String(),
       'screenshot_url': screenshotUrl,
+      'sighting_rarity': sightingRarity,
+      'location': location,
+      'xp_awarded': xpAwarded,
     });
   }
 
@@ -105,5 +132,11 @@ class SupabaseService {
         .eq('bird_card_id', birdCardId)
         .order('caught_at', ascending: false);
     return rows.map(CatchLog.fromJson).toList();
+  }
+
+  Future<void> signOut() => _client.auth.signOut();
+
+  Future<void> deleteAccount() async {
+    await _client.rpc('delete_user');
   }
 }

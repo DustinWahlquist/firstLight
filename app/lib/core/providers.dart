@@ -7,6 +7,10 @@ final supabaseClientProvider = Provider<SupabaseClient>(
   (ref) => Supabase.instance.client,
 );
 
+final authStateProvider = StreamProvider<AuthState>(
+  (ref) => Supabase.instance.client.auth.onAuthStateChange,
+);
+
 final supabaseServiceProvider = Provider<SupabaseService>(
   (ref) => SupabaseService(ref.watch(supabaseClientProvider)),
 );

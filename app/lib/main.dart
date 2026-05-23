@@ -15,15 +15,16 @@ void main() async {
   runApp(const ProviderScope(child: MurmurationApp()));
 }
 
-class MurmurationApp extends StatelessWidget {
+class MurmurationApp extends ConsumerWidget {
   const MurmurationApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
       title: 'First Light',
       theme: appTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

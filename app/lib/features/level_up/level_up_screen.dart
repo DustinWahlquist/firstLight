@@ -40,6 +40,7 @@ class _LevelUpScreenState extends State<LevelUpScreen>
     final card = widget.newCard;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F0E8),
       body: SafeArea(
         child: Center(
           child: FadeTransition(
