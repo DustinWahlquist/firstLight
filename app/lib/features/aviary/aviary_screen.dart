@@ -83,10 +83,13 @@ class AviaryScreen extends ConsumerWidget {
                   ),
                 Expanded(
                   child: cards.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No birds yet.\nLog your first catch to get started.',
                             textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         )
                       : ListView.builder(

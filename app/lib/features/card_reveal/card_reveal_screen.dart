@@ -24,7 +24,9 @@ class _CardRevealScreenState extends State<CardRevealScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+    _scaleAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
   }
@@ -66,7 +68,7 @@ class _CardRevealScreenState extends State<CardRevealScreen>
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           children: [
-                            const Icon(Icons.flutter_dash, size: 80),
+                            Icon(Icons.flutter_dash, size: 80, color: theme.colorScheme.primary),
                             const SizedBox(height: 16),
                             Text(card.speciesName, style: theme.textTheme.headlineMedium),
                             const SizedBox(height: 8),

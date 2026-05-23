@@ -144,7 +144,7 @@ class _TradingCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+            padding: const EdgeInsets.fromLTRB(10, 14, 10, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
