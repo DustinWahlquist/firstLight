@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers.dart';
+import 'bird_flight_icon.dart';
 import 'birdcage_icon.dart';
 
 class AppShell extends ConsumerWidget {
@@ -64,12 +65,13 @@ class AppShell extends ConsumerWidget {
         ),
         destinations: [
           NavigationDestination(
-            icon: BirdcageIcon(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            selectedIcon: BirdcageIcon(
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
+            icon: BirdFlightIcon(color: theme.colorScheme.onSurfaceVariant),
+            selectedIcon: BirdFlightIcon(color: theme.colorScheme.onSecondaryContainer),
+            label: 'Feed',
+          ),
+          NavigationDestination(
+            icon: BirdcageIcon(color: theme.colorScheme.onSurfaceVariant),
+            selectedIcon: BirdcageIcon(color: theme.colorScheme.onSecondaryContainer),
             label: 'Aviary',
           ),
           NavigationDestination(

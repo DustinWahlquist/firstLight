@@ -24,6 +24,15 @@ class SupabaseService {
     return rows.map(BirdCard.fromJson).toList();
   }
 
+  Future<List<BirdCard>> fetchAviaryFor(String userId) async {
+    final rows = await _client
+        .from('bird_cards')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return rows.map(BirdCard.fromJson).toList();
+  }
+
   Future<BirdCard?> fetchCard(String speciesName) async {
     final rows = await _client
         .from('bird_cards')

@@ -18,6 +18,15 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _notifications = false;
+  bool? _isPublic;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(myProfileProvider.future).then((p) {
+      if (mounted) setState(() => _isPublic = p?.isPublic ?? true);
+    });
+  }
 
   Future<void> _openEditProfile(BuildContext context) async {
     final updated = await Navigator.of(context).push<bool>(
@@ -128,12 +137,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             error: (_, _) => const SizedBox.shrink(),
             data: (cards) {
               final lifers = cards.length;
-              final totalCatches =
-                  cards.fold(0, (sum, c) => sum + c.catchCount);
+              final totalCatches = cards.fold(0, (sum, c) => sum + c.catchCount);
               final totalXp = cards.fold(0, (sum, c) => sum + c.xp);
-              final avgLevel = cards.isEmpty
-                  ? 0.0
-                  : cards.fold(0, (sum, c) => sum + c.level) / cards.length;
+              final friendCount = ref.watch(friendCountProvider);
 
               return _SectionCard(
                 label: 'STATS',
@@ -141,36 +147,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   child: Row(
                     children: [
+                      Expanded(child: _StatCell(label: 'Lifers', value: '$lifers')),
+                      Expanded(child: _StatCell(label: 'Total catches', value: '$totalCatches')),
+                      Expanded(child: _StatCell(label: 'Total XP', value: '$totalXp')),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _StatCell(
-                              label: 'Lifers',
-                              value: '$lifers',
-                            ),
-                            const SizedBox(height: 16),
-                            _StatCell(
-                              label: 'Total XP',
-                              value: '$totalXp',
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _StatCell(
-                              label: 'Total catches',
-                              value: '$totalCatches',
-                            ),
-                            const SizedBox(height: 16),
-                            _StatCell(
-                              label: 'Avg level',
-                              value: avgLevel.toStringAsFixed(1),
-                            ),
-                          ],
+                        child: GestureDetector(
+                          onTap: () => context.push('/friends'),
+                          child: _StatCell(
+                            label: 'Friends',
+                            value: friendCount.maybeWhen(data: (n) => '$n', orElse: () => '…'),
+                            primary: true,
+                          ),
                         ),
                       ),
                     ],
@@ -313,6 +300,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   title: const Text('Notifications'),
                   value: _notifications,
                   onChanged: (v) => setState(() => _notifications = v),
+                ),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                SwitchListTile(
+                  title: const Text('Public profile'),
+                  subtitle: Text(
+                    (_isPublic ?? true)
+                        ? 'Anyone can see your Aviary'
+                        : 'Only friends can see your Aviary',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  value: _isPublic ?? true,
+                  onChanged: (v) async {
+                    setState(() => _isPublic = v);
+                    await ref.read(supabaseServiceProvider).upsertProfile(isPublic: v);
+                  },
                 ),
                 Divider(
                   height: 1,
@@ -510,9 +519,10 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _StatCell extends StatelessWidget {
-  const _StatCell({required this.label, required this.value});
+  const _StatCell({required this.label, required this.value, this.primary = false});
   final String label;
   final String value;
+  final bool primary;
 
   @override
   Widget build(BuildContext context) {
@@ -526,7 +536,12 @@ class _StatCell extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        Text(value, style: theme.textTheme.headlineSmall),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: primary ? theme.colorScheme.primary : null,
+          ),
+        ),
       ],
     );
   }

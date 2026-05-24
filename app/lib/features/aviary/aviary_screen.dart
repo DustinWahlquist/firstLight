@@ -137,7 +137,7 @@ class AviaryScreen extends ConsumerWidget {
                                 itemBuilder: (context, i) => BirdCardTile(
                                   card: sorted[i],
                                   isGrid: true,
-                                  onTap: () => context.push('/bird-detail', extra: sorted[i]),
+                                  onTap: () => context.push('/bird-detail', extra: (card: sorted[i], ownerName: null)),
                                 ),
                               );
                             }
@@ -146,7 +146,7 @@ class AviaryScreen extends ConsumerWidget {
                               itemCount: sorted.length,
                               itemBuilder: (context, i) => BirdCardTile(
                                 card: sorted[i],
-                                onTap: () => context.push('/bird-detail', extra: sorted[i]),
+                                onTap: () => context.push('/bird-detail', extra: (card: sorted[i], ownerName: null)),
                               ),
                             );
                           },

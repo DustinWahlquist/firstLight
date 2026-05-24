@@ -15,9 +15,10 @@ final _catchLogsProvider =
 });
 
 class BirdDetailScreen extends ConsumerStatefulWidget {
-  const BirdDetailScreen({super.key, required this.card});
+  const BirdDetailScreen({super.key, required this.card, this.ownerName});
 
   final BirdCard card;
+  final String? ownerName;
 
   @override
   ConsumerState<BirdDetailScreen> createState() => _BirdDetailScreenState();
@@ -50,7 +51,9 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
-        title: Text(card.speciesName),
+        title: Text(widget.ownerName != null
+            ? "${widget.ownerName}'s ${card.speciesName}"
+            : card.speciesName),
         backgroundColor: Colors.transparent,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),

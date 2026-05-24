@@ -8,9 +8,14 @@ import '../../features/auth/reset_password_screen.dart';
 import '../../features/aviary/aviary_screen.dart';
 import '../../features/aviary/bird_detail_screen.dart';
 import '../../features/card_reveal/card_reveal_screen.dart';
+import '../../features/feed/feed_screen.dart';
+import '../../features/friends/friend_list_screen.dart';
+import '../../features/friends/friend_profile_screen.dart';
+import '../../features/friends/friends_screen.dart';
 import '../../features/level_up/level_up_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../models/bird_card.dart';
+import '../../models/user_profile.dart';
 import '../shell/app_shell.dart';
 
 class _AuthRefreshNotifier extends ChangeNotifier {
@@ -40,7 +45,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(notifier.dispose);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/feed',
     refreshListenable: notifier,
     redirect: (context, state) {
       final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
@@ -50,7 +55,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn && !isOnLogin) return '/login';
       if (isLoggedIn && notifier.isPasswordRecovery && !isOnReset) return '/reset-password';
-      if (isLoggedIn && isOnLogin) return '/';
+      if (isLoggedIn && isOnLogin) return '/feed';
       return null;
     },
     routes: [
@@ -68,6 +73,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
+              path: '/feed',
+              builder: (context, state) => const FeedScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
               path: '/',
               builder: (context, state) => const AviaryScreen(),
             ),
@@ -82,7 +93,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/bird-detail',
-        builder: (context, state) => BirdDetailScreen(card: state.extra as BirdCard),
+        builder: (context, state) {
+          final extra = state.extra as ({BirdCard card, String? ownerName});
+          return BirdDetailScreen(card: extra.card, ownerName: extra.ownerName);
+        },
       ),
       GoRoute(
         path: '/card-reveal',
@@ -93,6 +107,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final args = state.extra as ({BirdCard oldCard, BirdCard newCard});
           return LevelUpScreen(oldCard: args.oldCard, newCard: args.newCard);
+        },
+      ),
+      GoRoute(
+        path: '/friends',
+        builder: (context, state) => const FriendsScreen(),
+      ),
+      GoRoute(
+        path: '/friend-profile',
+        builder: (context, state) => FriendProfileScreen(profile: state.extra as UserProfile),
+      ),
+      GoRoute(
+        path: '/friend-list',
+        builder: (context, state) {
+          final extra = state.extra as ({String userId, String name});
+          return FriendListScreen(userId: extra.userId, name: extra.name);
         },
       ),
     ],
