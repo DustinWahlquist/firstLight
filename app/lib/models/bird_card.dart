@@ -20,6 +20,7 @@ class BirdCard {
     this.firstCatchLongitude,
     this.screenshotUrl,
     this.lineArtUrl,
+    this.lastCaughtAt,
     required this.createdAt,
   });
 
@@ -41,6 +42,7 @@ class BirdCard {
   final double? firstCatchLongitude;
   final String? screenshotUrl;
   final String? lineArtUrl;
+  final DateTime? lastCaughtAt;
   final DateTime createdAt;
 
   static const Map<int, int> _xpThresholds = {
@@ -102,6 +104,9 @@ class BirdCard {
         firstCatchLongitude: (json['first_catch_longitude'] as num?)?.toDouble(),
         screenshotUrl: json['screenshot_url'] as String?,
         lineArtUrl: json['line_art_url'] as String?,
+        lastCaughtAt: json['last_caught_at'] != null
+            ? DateTime.parse(json['last_caught_at'] as String)
+            : null,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 

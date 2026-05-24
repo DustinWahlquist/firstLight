@@ -67,6 +67,7 @@ class SupabaseService {
           'endurance': result.endurance,
           'screenshot_url': screenshotUrl,
           'line_art_url': result.lineArtUrl,
+          'last_caught_at': DateTime.now().toIso8601String(),
         })
         .select()
         .single();
@@ -92,6 +93,7 @@ class SupabaseService {
           'xp': newXp,
           'level': newLevel,
           'catch_count': card.catchCount + 1,
+          'last_caught_at': DateTime.now().toIso8601String(),
         })
         .eq('id', card.id)
         .select()

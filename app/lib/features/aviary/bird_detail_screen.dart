@@ -88,43 +88,48 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
               if (pins.isEmpty) return const SizedBox.shrink();
               final avgLat = pins.map((l) => l.latitude!).reduce((a, b) => a + b) / pins.length;
               final avgLng = pins.map((l) => l.longitude!).reduce((a, b) => a + b) / pins.length;
-              return _SectionCard(
-                label: 'CATCH LOCATIONS',
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                  child: SizedBox(
-                    height: 180,
-                    child: FlutterMap(
-                      options: MapOptions(
-                        initialCenter: LatLng(avgLat, avgLng),
-                        initialZoom: pins.length == 1 ? 8 : 4,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.murmuration.murmuration',
-                        ),
-                        MarkerLayer(
-                          markers: pins.map((l) => Marker(
-                            point: LatLng(l.latitude!, l.longitude!),
-                            width: 28,
-                            height: 28,
-                            child: Icon(
-                              Icons.flutter_dash,
-                              size: 24,
-                              color: Theme.of(context).colorScheme.primary,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SectionCard(
+                    label: 'CATCH LOCATIONS',
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      child: SizedBox(
+                        height: 180,
+                        child: FlutterMap(
+                          options: MapOptions(
+                            initialCenter: LatLng(avgLat, avgLng),
+                            initialZoom: pins.length == 1 ? 8 : 4,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.murmuration.murmuration',
                             ),
-                          )).toList(),
+                            MarkerLayer(
+                              markers: pins.map((l) => Marker(
+                                point: LatLng(l.latitude!, l.longitude!),
+                                width: 28,
+                                height: 28,
+                                child: Icon(
+                                  Icons.flutter_dash,
+                                  size: 24,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              )).toList(),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                ],
               );
             },
             orElse: () => const SizedBox.shrink(),
           ),
-          const SizedBox(height: 12),
           catchLogs.when(
             loading: () => const _SectionCard(
               label: 'CATCH LOG',

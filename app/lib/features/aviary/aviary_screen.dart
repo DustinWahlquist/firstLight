@@ -12,28 +12,39 @@ final aviaryProvider = FutureProvider<List<BirdCard>>((ref) {
 });
 
 enum _CatchState { idle, loading, duplicate }
+enum _SortOrder { dateAdded, lastCatch, level, alphabetical }
 
 final _catchStateProvider = StateProvider<_CatchState>((_) => _CatchState.idle);
+final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.dateAdded);
+final _sortAscendingProvider = StateProvider<bool>((_) => false);
 
 class AviaryScreen extends ConsumerWidget {
   const AviaryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final aviary = ref.watch(aviaryProvider);
     final catchState = ref.watch(_catchStateProvider);
+    final sortOrder = ref.watch(_sortOrderProvider);
+    final ascending = ref.watch(_sortAscendingProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Aviary'),
         backgroundColor: Colors.transparent,
+        actions: [
+          Builder(
+            builder: (btnCtx) => IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () => _showSortMenu(btnCtx, ref),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(
-            height: 1,
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          child: Divider(height: 1, color: theme.colorScheme.outlineVariant),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -50,7 +61,16 @@ class AviaryScreen extends ConsumerWidget {
           aviary.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
-            data: (cards) => Column(
+            data: (cards) {
+              int cmp(BirdCard a, BirdCard b) => switch (sortOrder) {
+                _SortOrder.dateAdded    => a.createdAt.compareTo(b.createdAt),
+                _SortOrder.lastCatch    => (a.lastCaughtAt ?? a.createdAt)
+                                              .compareTo(b.lastCaughtAt ?? b.createdAt),
+                _SortOrder.level        => a.level.compareTo(b.level),
+                _SortOrder.alphabetical => a.speciesName.compareTo(b.speciesName),
+              };
+              final sorted = [...cards]..sort((a, b) => ascending ? cmp(a, b) : cmp(b, a));
+              return Column(
               children: [
                 if (catchState == _CatchState.duplicate)
                   Padding(
@@ -82,7 +102,7 @@ class AviaryScreen extends ConsumerWidget {
                     ),
                   ),
                 Expanded(
-                  child: cards.isEmpty
+                  child: sorted.isEmpty
                       ? Center(
                           child: Text(
                             'No birds yet.\nLog your first catch to get started.',
@@ -104,27 +124,28 @@ class AviaryScreen extends ConsumerWidget {
                                   mainAxisSpacing: 12,
                                   childAspectRatio: 0.82,
                                 ),
-                                itemCount: cards.length,
+                                itemCount: sorted.length,
                                 itemBuilder: (context, i) => BirdCardTile(
-                                  card: cards[i],
+                                  card: sorted[i],
                                   isGrid: true,
-                                  onTap: () => context.push('/bird-detail', extra: cards[i]),
+                                  onTap: () => context.push('/bird-detail', extra: sorted[i]),
                                 ),
                               );
                             }
                             return ListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                              itemCount: cards.length,
+                              itemCount: sorted.length,
                               itemBuilder: (context, i) => BirdCardTile(
-                                card: cards[i],
-                                onTap: () => context.push('/bird-detail', extra: cards[i]),
+                                card: sorted[i],
+                                onTap: () => context.push('/bird-detail', extra: sorted[i]),
                               ),
                             );
                           },
                         ),
                 ),
               ],
-            ),
+              );
+            },
           ),
           if (catchState == _CatchState.loading)
             Container(
@@ -140,6 +161,80 @@ class AviaryScreen extends ConsumerWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showSortMenu(BuildContext context, WidgetRef ref) {
+    final box = context.findRenderObject() as RenderBox;
+    final overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final pos = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final right = overlay.size.width - pos.dx - box.size.width;
+    final top = pos.dy + box.size.height - 8;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (_) => Stack(
+        children: [
+          Positioned(
+            top: top,
+            right: right,
+            child: Consumer(
+            builder: (ctx, ref, _) {
+              final sortOrder = ref.watch(_sortOrderProvider);
+              final ascending = ref.watch(_sortAscendingProvider);
+              final theme = Theme.of(context);
+              return Material(
+                elevation: 6,
+                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.surface,
+                child: IntrinsicWidth(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _SortOrder.values.map((v) {
+                      final isSelected = v == sortOrder;
+                      final label = switch (v) {
+                        _SortOrder.dateAdded    => 'Date added',
+                        _SortOrder.lastCatch    => 'Last catch',
+                        _SortOrder.level        => 'Level',
+                        _SortOrder.alphabetical => 'Alphabetical',
+                      };
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: Icon(
+                          isSelected
+                              ? (ascending ? Icons.arrow_upward : Icons.arrow_downward)
+                              : Icons.unfold_more,
+                          size: 18,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        onTap: () {
+                          if (isSelected) {
+                            ref.read(_sortAscendingProvider.notifier).state = !ascending;
+                          } else {
+                            ref.read(_sortOrderProvider.notifier).state = v;
+                            ref.read(_sortAscendingProvider.notifier).state =
+                                v == _SortOrder.alphabetical;
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+          ),
         ],
       ),
     );
