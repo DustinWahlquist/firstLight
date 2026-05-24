@@ -1,12 +1,9 @@
-import 'rarity.dart';
-
 class BirdCard {
   const BirdCard({
     required this.id,
     required this.userId,
     required this.speciesName,
     required this.scientificName,
-    required this.rarity,
     required this.level,
     required this.xp,
     required this.catchCount,
@@ -28,7 +25,6 @@ class BirdCard {
   final String userId;
   final String speciesName;
   final String scientificName;
-  final Rarity rarity;
   final int level;
   final int xp;
   final int catchCount;
@@ -70,7 +66,6 @@ class BirdCard {
         userId: userId,
         speciesName: speciesName,
         scientificName: scientificName,
-        rarity: rarity,
         level: level ?? this.level,
         xp: xp ?? this.xp,
         catchCount: catchCount ?? this.catchCount,
@@ -90,7 +85,6 @@ class BirdCard {
         userId: json['user_id'] as String,
         speciesName: json['species_name'] as String,
         scientificName: json['scientific_name'] as String? ?? '',
-        rarity: Rarity.fromString(json['rarity'] as String),
         level: json['level'] as int,
         xp: json['xp'] as int,
         catchCount: json['catch_count'] as int,
@@ -115,7 +109,6 @@ class BirdCard {
         'user_id': userId,
         'species_name': speciesName,
         'scientific_name': scientificName,
-        'rarity': rarity.label,
         'level': level,
         'xp': xp,
         'catch_count': catchCount,

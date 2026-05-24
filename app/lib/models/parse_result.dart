@@ -1,10 +1,7 @@
-import 'rarity.dart';
-
 class ParseResult {
   const ParseResult({
     required this.speciesName,
     required this.scientificName,
-    required this.rarity,
     required this.sightingRarity,
     required this.date,
     required this.location,
@@ -19,7 +16,6 @@ class ParseResult {
 
   final String speciesName;
   final String scientificName;
-  final Rarity rarity;
   final String sightingRarity;
   final DateTime date;
   final String location;
@@ -34,7 +30,6 @@ class ParseResult {
   ParseResult copyWith({String? location, double? latitude, double? longitude}) => ParseResult(
         speciesName: speciesName,
         scientificName: scientificName,
-        rarity: rarity,
         sightingRarity: sightingRarity,
         date: date,
         location: location ?? this.location,
@@ -50,7 +45,6 @@ class ParseResult {
   factory ParseResult.fromJson(Map<String, dynamic> json) => ParseResult(
         speciesName: json['species_name'] as String,
         scientificName: json['scientific_name'] as String? ?? '',
-        rarity: Rarity.fromString(json['rarity'] as String),
         sightingRarity: json['sighting_rarity'] as String? ?? 'Common',
         date: DateTime.parse(json['date'] as String),
         location: json['location'] as String,

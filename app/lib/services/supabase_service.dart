@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/bird_card.dart';
+import '../models/rarity.dart';
 import '../models/catch_log.dart';
 import '../models/feed_event.dart';
 import '../models/friendship.dart';
@@ -66,7 +67,6 @@ class SupabaseService {
           'user_id': _userId,
           'species_name': result.speciesName,
           'scientific_name': result.scientificName,
-          'rarity': result.rarity.label,
           'level': 1,
           'xp': 0,
           'catch_count': 1,
@@ -109,7 +109,7 @@ class SupabaseService {
   }
 
   Future<BirdCard> awardXp(BirdCard card, ParseResult result, String screenshotUrl) async {
-    final xpToAdd = result.rarity.xpPerCatch;
+    final xpToAdd = Rarity.fromString(result.sightingRarity).xpPerCatch;
     final newXp = card.xp + xpToAdd;
     final newLevel = BirdCard.levelForXp(newXp);
     final row = await _client

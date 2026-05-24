@@ -7,7 +7,6 @@ import 'package:latlong2/latlong.dart';
 import '../../core/providers.dart';
 import '../../models/bird_card.dart';
 import '../../models/catch_log.dart';
-import '../../models/rarity.dart';
 
 final _catchLogsProvider =
     FutureProvider.family<List<CatchLog>, String>((ref, cardId) {
@@ -171,7 +170,6 @@ class _TradingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final (borderColor, glowColor) = _rarityColors(theme, card.rarity);
     final xpToNext = BirdCard.xpForNextLevel(card.level);
     final xpProgress = (card.xp / xpToNext).clamp(0.0, 1.0);
 
@@ -180,16 +178,7 @@ class _TradingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 2.5),
-        boxShadow: glowColor != null
-            ? [
-                BoxShadow(
-                  color: glowColor.withValues(alpha: 0.6),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 2.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -268,16 +257,6 @@ class _TradingCard extends StatelessWidget {
     );
   }
 
-  (Color, Color?) _rarityColors(ThemeData theme, Rarity rarity) {
-    switch (rarity) {
-      case Rarity.common:
-        return (theme.colorScheme.outlineVariant, null);
-      case Rarity.somewhatRare:
-        return (theme.colorScheme.secondary, theme.colorScheme.secondaryContainer);
-      case Rarity.ultraRare:
-        return (theme.colorScheme.primary, theme.colorScheme.primaryContainer);
-    }
-  }
 }
 
 class _SectionCard extends StatelessWidget {
