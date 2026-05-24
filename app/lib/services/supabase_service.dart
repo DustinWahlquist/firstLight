@@ -326,24 +326,19 @@ class SupabaseService {
   Future<List<Friendship>> fetchFriends() async {
     final rows = await _client
         .from('friendships')
-        .select('*, profiles!friendships_requester_id_fkey(*), profiles!friendships_addressee_id_fkey(*)')
+        .select()
         .or('requester_id.eq.$_userId,addressee_id.eq.$_userId')
         .eq('status', 'accepted');
-    return rows.map((row) => _friendshipWithOtherProfile(row)).toList();
+    return _attachProfilesToFriendships(rows, _userId);
   }
 
   Future<List<Friendship>> fetchPendingIncoming() async {
     final rows = await _client
         .from('friendships')
-        .select('*, profiles!friendships_requester_id_fkey(*)')
+        .select()
         .eq('addressee_id', _userId)
         .eq('status', 'pending');
-    return rows.map((row) {
-      final profileJson = row['profiles!friendships_requester_id_fkey'] as Map<String, dynamic>?;
-      final map = Map<String, dynamic>.from(row)
-        ..['profiles'] = profileJson;
-      return Friendship.fromJson(map);
-    }).toList();
+    return _attachProfilesToFriendships(rows, _userId);
   }
 
   Future<Friendship?> fetchFriendshipWith(String userId) async {
@@ -368,30 +363,35 @@ class SupabaseService {
   Future<List<Friendship>> fetchFriendListFor(String userId) async {
     final rows = await _client
         .from('friendships')
-        .select('*, profiles!friendships_requester_id_fkey(*), profiles!friendships_addressee_id_fkey(*)')
+        .select()
         .or('requester_id.eq.$userId,addressee_id.eq.$userId')
         .eq('status', 'accepted');
-    return rows.map((row) => _friendshipWithOtherProfileFor(row, userId)).toList();
+    return _attachProfilesToFriendships(rows, userId);
   }
 
-  Friendship _friendshipWithOtherProfile(Map<String, dynamic> row) {
-    final isRequester = row['requester_id'] as String == _userId;
-    final key = isRequester
-        ? 'profiles!friendships_addressee_id_fkey'
-        : 'profiles!friendships_requester_id_fkey';
-    final profileJson = row[key] as Map<String, dynamic>?;
-    final map = Map<String, dynamic>.from(row)..['profiles'] = profileJson;
-    return Friendship.fromJson(map);
+  Future<List<Friendship>> _attachProfilesToFriendships(
+    List<Map<String, dynamic>> rows,
+    String ownerId,
+  ) async {
+    if (rows.isEmpty) return [];
+    final otherIds = rows.map((r) {
+      final rid = r['requester_id'] as String;
+      return rid == ownerId ? r['addressee_id'] as String : rid;
+    }).toSet().toList();
+    final profileMap = await _fetchProfileMap(otherIds);
+    return rows.map((r) {
+      final rid = r['requester_id'] as String;
+      final otherId = rid == ownerId ? r['addressee_id'] as String : rid;
+      final map = Map<String, dynamic>.from(r)
+        ..['profiles'] = profileMap[otherId]?.toJson();
+      return Friendship.fromJson(map);
+    }).toList();
   }
 
-  Friendship _friendshipWithOtherProfileFor(Map<String, dynamic> row, String ownerId) {
-    final isRequester = row['requester_id'] as String == ownerId;
-    final key = isRequester
-        ? 'profiles!friendships_addressee_id_fkey'
-        : 'profiles!friendships_requester_id_fkey';
-    final profileJson = row[key] as Map<String, dynamic>?;
-    final map = Map<String, dynamic>.from(row)..['profiles'] = profileJson;
-    return Friendship.fromJson(map);
+  Future<Map<String, UserProfile>> _fetchProfileMap(List<String> ids) async {
+    if (ids.isEmpty) return {};
+    final rows = await _client.from('profiles').select().inFilter('id', ids);
+    return {for (final r in rows) r['id'] as String: UserProfile.fromJson(r)};
   }
 
   // ── Feed ──────────────────────────────────────────────────────────
@@ -399,14 +399,14 @@ class SupabaseService {
   Future<List<FeedEvent>> fetchFeed() async {
     final rows = await _client
         .from('feed_events')
-        .select('*, profiles(*)')
+        .select()
         .neq('user_id', _userId)
         .order('created_at', ascending: false)
         .limit(50);
-    final events = rows.map(FeedEvent.fromJson).toList();
-    if (events.isEmpty) return events;
-    // Batch-fetch peck counts and whether current user has pecked
-    final ids = events.map((e) => e.id).toList();
+    if (rows.isEmpty) return [];
+    final userIds = rows.map((r) => r['user_id'] as String).toSet().toList();
+    final profileMap = await _fetchProfileMap(userIds);
+    final ids = rows.map((r) => r['id'] as String).toList();
     final peckRows = await _client
         .from('pecks')
         .select('feed_event_id, user_id')
@@ -418,10 +418,15 @@ class SupabaseService {
       countMap[fid] = (countMap[fid] ?? 0) + 1;
       if (p['user_id'] as String == _userId) peckedSet.add(fid);
     }
-    return events.map((e) => e.copyWith(
-      peckCount: countMap[e.id] ?? 0,
-      hasPecked: peckedSet.contains(e.id),
-    )).toList();
+    return rows.map((r) {
+      final eventId = r['id'] as String;
+      final map = Map<String, dynamic>.from(r)
+        ..['profiles'] = profileMap[r['user_id'] as String]?.toJson();
+      return FeedEvent.fromJson(map).copyWith(
+        peckCount: countMap[eventId] ?? 0,
+        hasPecked: peckedSet.contains(eventId),
+      );
+    }).toList();
   }
 
   // ── Pecks ─────────────────────────────────────────────────────────
@@ -446,23 +451,28 @@ class SupabaseService {
   Future<List<Scribble>> fetchScribbles(String feedEventId) async {
     final rows = await _client
         .from('scribbles')
-        .select('*, profiles(*)')
+        .select()
         .eq('feed_event_id', feedEventId)
         .order('created_at', ascending: true);
-    return rows.map(Scribble.fromJson).toList();
+    if (rows.isEmpty) return [];
+    final userIds = rows.map((r) => r['user_id'] as String).toSet().toList();
+    final profileMap = await _fetchProfileMap(userIds);
+    return rows.map((r) {
+      final map = Map<String, dynamic>.from(r)
+        ..['profiles'] = profileMap[r['user_id'] as String]?.toJson();
+      return Scribble.fromJson(map);
+    }).toList();
   }
 
   Future<Scribble> addScribble(String feedEventId, String text) async {
     final row = await _client
         .from('scribbles')
-        .insert({
-          'user_id': _userId,
-          'feed_event_id': feedEventId,
-          'text': text,
-        })
-        .select('*, profiles(*)')
+        .insert({'user_id': _userId, 'feed_event_id': feedEventId, 'text': text})
+        .select()
         .single();
-    return Scribble.fromJson(row);
+    final profile = await fetchProfile(_userId);
+    final map = Map<String, dynamic>.from(row)..['profiles'] = profile?.toJson();
+    return Scribble.fromJson(map);
   }
 
   Future<void> deleteScribble(String scribbleId) async {
