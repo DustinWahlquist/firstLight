@@ -45,10 +45,9 @@ class SupabaseService {
     return BirdCard.fromJson(rows.first);
   }
 
-  Future<bool> hasCaughtToday(String birdCardId) async {
-    final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day).toIso8601String();
-    final end = DateTime(today.year, today.month, today.day, 23, 59, 59).toIso8601String();
+  Future<bool> hasCaughtOnDate(String birdCardId, DateTime date) async {
+    final start = DateTime(date.year, date.month, date.day).toIso8601String();
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
     final rows = await _client
         .from('catch_logs')
         .select('id')
@@ -80,7 +79,7 @@ class SupabaseService {
           'endurance': result.endurance,
           'screenshot_url': screenshotUrl,
           'line_art_url': result.lineArtUrl,
-          'last_caught_at': DateTime.now().toIso8601String(),
+          'last_caught_at': result.date.toIso8601String(),
         })
         .select()
         .single();
@@ -94,6 +93,7 @@ class SupabaseService {
         latitude: result.latitude,
         longitude: result.longitude,
         xpAwarded: 0,
+        caughtAt: result.date,
       ),
       _emitFeedEvent({
         'user_id': _userId,
@@ -118,7 +118,7 @@ class SupabaseService {
           'xp': newXp,
           'level': newLevel,
           'catch_count': card.catchCount + 1,
-          'last_caught_at': DateTime.now().toIso8601String(),
+          'last_caught_at': result.date.toIso8601String(),
         })
         .eq('id', card.id)
         .select()
@@ -154,6 +154,7 @@ class SupabaseService {
         latitude: result.latitude,
         longitude: result.longitude,
         xpAwarded: xpToAdd,
+        caughtAt: result.date,
       ),
       ...events.map(_emitFeedEvent),
     ]);
@@ -191,13 +192,14 @@ class SupabaseService {
     required String sightingRarity,
     required String location,
     required int xpAwarded,
+    required DateTime caughtAt,
     double? latitude,
     double? longitude,
   }) async {
     await _client.from('catch_logs').insert({
       'user_id': _userId,
       'bird_card_id': birdCardId,
-      'caught_at': DateTime.now().toIso8601String(),
+      'caught_at': caughtAt.toIso8601String(),
       'screenshot_url': screenshotUrl,
       'sighting_rarity': sightingRarity,
       'location': location,

@@ -20,7 +20,7 @@ final aviaryProvider = FutureProvider<List<BirdCard>>((ref) async {
   return enriched;
 });
 
-enum _CatchState { idle, loading, duplicate }
+enum _CatchState { idle, loading, duplicate, futureDate }
 enum _SortOrder { dateAdded, lastCatch, level, alphabetical }
 
 final _catchStateProvider = StateProvider<_CatchState>((_) => _CatchState.idle);
@@ -81,7 +81,7 @@ class AviaryScreen extends ConsumerWidget {
               final sorted = [...cards]..sort((a, b) => ascending ? cmp(a, b) : cmp(b, a));
               return Column(
               children: [
-                if (catchState == _CatchState.duplicate)
+                if (catchState == _CatchState.duplicate || catchState == _CatchState.futureDate)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Card(
@@ -92,7 +92,9 @@ class AviaryScreen extends ConsumerWidget {
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
-                                'Already logged this bird today. Come back tomorrow!',
+                                catchState == _CatchState.futureDate
+                                    ? 'This screenshot is dated in the future. Please check the date on your device.'
+                                    : 'Already logged this bird today. Come back tomorrow!',
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onErrorContainer,
                                 ),
@@ -290,12 +292,19 @@ class AviaryScreen extends ConsumerWidget {
 
       if (!context.mounted) return;
 
+      final catchDate = parseResult.date;
+      final today = DateTime.now();
+      if (catchDate.isAfter(DateTime(today.year, today.month, today.day, 23, 59, 59))) {
+        ref.read(_catchStateProvider.notifier).state = _CatchState.futureDate;
+        return;
+      }
+
       final screenshotUrl = await supabase.uploadScreenshot(file);
       final existing = await supabase.fetchCard(parseResult.speciesName);
 
       if (existing != null) {
-        final alreadyCaughtToday = await supabase.hasCaughtToday(existing.id);
-        if (alreadyCaughtToday) {
+        final alreadyCaught = await supabase.hasCaughtOnDate(existing.id, catchDate);
+        if (alreadyCaught) {
           ref.read(_catchStateProvider.notifier).state = _CatchState.duplicate;
           return;
         }
