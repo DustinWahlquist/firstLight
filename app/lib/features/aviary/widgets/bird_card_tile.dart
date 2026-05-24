@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../core/providers.dart';
 import '../../../models/bird_card.dart';
 
 class BirdCardTile extends StatelessWidget {
@@ -83,36 +81,14 @@ class _ListCard extends StatelessWidget {
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
 
-class _GridCard extends ConsumerStatefulWidget {
+class _GridCard extends StatelessWidget {
   const _GridCard({required this.card, this.onTap});
   final BirdCard card;
   final VoidCallback? onTap;
 
   @override
-  ConsumerState<_GridCard> createState() => _GridCardState();
-}
-
-class _GridCardState extends ConsumerState<_GridCard> {
-  String? _lineArtUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _lineArtUrl = widget.card.lineArtUrl;
-    if (_lineArtUrl == null) _fetchLineArt();
-  }
-
-  Future<void> _fetchLineArt() async {
-    final url = await ref
-        .read(supabaseServiceProvider)
-        .fetchSpeciesLineArt(widget.card.speciesName);
-    if (mounted && url != null) setState(() => _lineArtUrl = url);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final card = widget.card;
     final xpToNext = BirdCard.xpForNextLevel(card.level);
     final xpProgress = card.xp / xpToNext;
 
@@ -120,7 +96,7 @@ class _GridCardState extends ConsumerState<_GridCard> {
       color: theme.colorScheme.surface,
       margin: EdgeInsets.zero,
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,9 +105,9 @@ class _GridCardState extends ConsumerState<_GridCard> {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: _lineArtUrl != null
+                child: card.lineArtUrl != null
                     ? SvgPicture.network(
-                        _lineArtUrl!,
+                        card.lineArtUrl!,
                         fit: BoxFit.contain,
                         placeholderBuilder: (_) => _StripedBackground(theme: theme),
                       )

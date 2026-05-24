@@ -31,6 +31,22 @@ class ParseResult {
   final double? longitude;
   final String? lineArtUrl;
 
+  ParseResult copyWith({String? location, double? latitude, double? longitude}) => ParseResult(
+        speciesName: speciesName,
+        scientificName: scientificName,
+        rarity: rarity,
+        sightingRarity: sightingRarity,
+        date: date,
+        location: location ?? this.location,
+        description: description,
+        facts: facts,
+        migrationSpeed: migrationSpeed,
+        endurance: endurance,
+        latitude: latitude,
+        longitude: longitude,
+        lineArtUrl: lineArtUrl,
+      );
+
   factory ParseResult.fromJson(Map<String, dynamic> json) => ParseResult(
         speciesName: json['species_name'] as String,
         scientificName: json['scientific_name'] as String? ?? '',

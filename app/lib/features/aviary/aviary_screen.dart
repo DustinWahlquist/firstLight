@@ -7,8 +7,17 @@ import '../../core/providers.dart';
 import '../../models/bird_card.dart';
 import 'widgets/bird_card_tile.dart';
 
-final aviaryProvider = FutureProvider<List<BirdCard>>((ref) {
-  return ref.watch(supabaseServiceProvider).fetchAviary();
+final aviaryProvider = FutureProvider<List<BirdCard>>((ref) async {
+  final service = ref.watch(supabaseServiceProvider);
+  final cards = await service.fetchAviary();
+  final enriched = await Future.wait(
+    cards.map((c) async {
+      if (c.lineArtUrl != null) return c;
+      final url = await service.fetchSpeciesLineArt(c.speciesName);
+      return url != null ? c.copyWith(lineArtUrl: url) : c;
+    }),
+  );
+  return enriched;
 });
 
 enum _CatchState { idle, loading, duplicate }
@@ -266,7 +275,21 @@ class AviaryScreen extends ConsumerWidget {
       final supabase = ref.read(supabaseServiceProvider);
       final vision = ref.read(visionServiceProvider);
 
-      final parseResult = await vision.parseScreenshot(file);
+      var parseResult = await vision.parseScreenshot(file);
+
+      if (parseResult.latitude == null && context.mounted) {
+        final manualLocation = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _LocationDialog(initialLocation: parseResult.location),
+        );
+        if (manualLocation != null && manualLocation.isNotEmpty) {
+          parseResult = parseResult.copyWith(location: manualLocation);
+        }
+      }
+
+      if (!context.mounted) return;
+
       final screenshotUrl = await supabase.uploadScreenshot(file);
       final existing = await supabase.fetchCard(parseResult.speciesName);
 
@@ -299,6 +322,72 @@ class AviaryScreen extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+class _LocationDialog extends StatefulWidget {
+  const _LocationDialog({required this.initialLocation});
+  final String initialLocation;
+
+  @override
+  State<_LocationDialog> createState() => _LocationDialogState();
+}
+
+class _LocationDialogState extends State<_LocationDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialLocation);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('Where was this?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "We couldn't pinpoint this location on the map. Enter a place name to save with this catch.",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Location',
+              hintText: 'e.g. Central Park, New York',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(widget.initialLocation),
+          child: const Text('Skip'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
