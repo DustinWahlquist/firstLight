@@ -92,13 +92,35 @@ class AviaryScreen extends ConsumerWidget {
                             ),
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                          itemCount: cards.length,
-                          itemBuilder: (context, i) => BirdCardTile(
-                            card: cards[i],
-                            onTap: () => context.push('/bird-detail', extra: cards[i]),
-                          ),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isTablet = constraints.maxWidth > 600;
+                            if (isTablet) {
+                              return GridView.builder(
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 0.82,
+                                ),
+                                itemCount: cards.length,
+                                itemBuilder: (context, i) => BirdCardTile(
+                                  card: cards[i],
+                                  isGrid: true,
+                                  onTap: () => context.push('/bird-detail', extra: cards[i]),
+                                ),
+                              );
+                            }
+                            return ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                              itemCount: cards.length,
+                              itemBuilder: (context, i) => BirdCardTile(
+                                card: cards[i],
+                                onTap: () => context.push('/bird-detail', extra: cards[i]),
+                              ),
+                            );
+                          },
                         ),
                 ),
               ],
