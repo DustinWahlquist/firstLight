@@ -318,6 +318,7 @@ class _CatchInfoGrid extends StatelessWidget {
                   label: 'First seen',
                   value: dateStr,
                   theme: theme,
+                  small: true,
                   centered: true,
                 ),
               ],
@@ -381,7 +382,7 @@ class _InfoCell extends StatelessWidget {
         Text(
           value,
           textAlign: align,
-          style: small ? theme.textTheme.bodySmall : theme.textTheme.headlineSmall,
+          style: small ? theme.textTheme.titleMedium : theme.textTheme.headlineSmall,
         ),
       ],
     );
