@@ -1,3 +1,8 @@
+/// Identifies the app to the OpenStreetMap tile server (required by their
+/// usage policy). Matches the iOS/Android bundle id, which intentionally
+/// still reads murmuration.
+const osmUserAgentPackageName = 'com.murmuration.murmuration';
+
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
   defaultValue: 'https://mlvcppunlcaqzxelwsap.supabase.co',

@@ -3,27 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/providers.dart';
+import '../../domain/log_catch_use_case.dart';
 import '../../models/bird_card.dart';
+import 'aviary_providers.dart';
+import 'log_catch_controller.dart';
 import 'widgets/bird_card_tile.dart';
 
-final aviaryProvider = FutureProvider<List<BirdCard>>((ref) async {
-  final service = ref.watch(supabaseServiceProvider);
-  final cards = await service.fetchAviary();
-  final enriched = await Future.wait(
-    cards.map((c) async {
-      if (c.lineArtUrl != null) return c;
-      final url = await service.fetchSpeciesLineArt(c.speciesName);
-      return url != null ? c.copyWith(lineArtUrl: url) : c;
-    }),
-  );
-  return enriched;
-});
-
-enum _CatchState { idle, loading, duplicate, futureDate }
 enum _SortOrder { dateAdded, lastCatch, level, alphabetical }
 
-final _catchStateProvider = StateProvider<_CatchState>((_) => _CatchState.idle);
 final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.dateAdded);
 final _sortAscendingProvider = StateProvider<bool>((_) => false);
 
@@ -34,12 +21,11 @@ class AviaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final aviary = ref.watch(aviaryProvider);
-    final catchState = ref.watch(_catchStateProvider);
+    final catchState = ref.watch(logCatchControllerProvider);
     final sortOrder = ref.watch(_sortOrderProvider);
     final ascending = ref.watch(_sortAscendingProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Aviary'),
         backgroundColor: Colors.transparent,
@@ -57,7 +43,7 @@ class AviaryScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: catchState == _CatchState.loading
+        onPressed: catchState == CatchFlowStatus.loading
             ? null
             : () => _pickImage(context, ref),
         icon: const Icon(Icons.add_a_photo_outlined),
@@ -81,7 +67,7 @@ class AviaryScreen extends ConsumerWidget {
               final sorted = [...cards]..sort((a, b) => ascending ? cmp(a, b) : cmp(b, a));
               return Column(
               children: [
-                if (catchState == _CatchState.duplicate || catchState == _CatchState.futureDate)
+                if (catchState == CatchFlowStatus.duplicate || catchState == CatchFlowStatus.futureDate)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Card(
@@ -92,7 +78,7 @@ class AviaryScreen extends ConsumerWidget {
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
-                                catchState == _CatchState.futureDate
+                                catchState == CatchFlowStatus.futureDate
                                     ? 'This screenshot is dated in the future. Please check the date on your device.'
                                     : 'Already logged this bird today. Come back tomorrow!',
                                 style: TextStyle(
@@ -105,8 +91,8 @@ class AviaryScreen extends ConsumerWidget {
                             icon: const Icon(Icons.close),
                             color: Theme.of(context).colorScheme.onErrorContainer,
                             onPressed: () => ref
-                                .read(_catchStateProvider.notifier)
-                                .state = _CatchState.idle,
+                                .read(logCatchControllerProvider.notifier)
+                                .dismissBanner(),
                           ),
                         ],
                       ),
@@ -158,7 +144,7 @@ class AviaryScreen extends ConsumerWidget {
               );
             },
           ),
-          if (catchState == _CatchState.loading)
+          if (catchState == CatchFlowStatus.loading)
             Container(
               color: const Color(0xD9F5F0E8),
               child: const Center(
@@ -271,13 +257,10 @@ class AviaryScreen extends ConsumerWidget {
   }
 
   Future<void> _submitCatch(BuildContext context, WidgetRef ref, File file) async {
-    ref.read(_catchStateProvider.notifier).state = _CatchState.loading;
+    final controller = ref.read(logCatchControllerProvider.notifier);
 
     try {
-      final supabase = ref.read(supabaseServiceProvider);
-      final vision = ref.read(visionServiceProvider);
-
-      var parseResult = await vision.parseScreenshot(file);
+      var parseResult = await controller.parseScreenshot(file);
 
       if (parseResult.latitude == null && context.mounted) {
         final manualLocation = await showDialog<String>(
@@ -291,40 +274,20 @@ class AviaryScreen extends ConsumerWidget {
       }
 
       if (!context.mounted) return;
+      final result = await controller.submit(parseResult, file);
 
-      final catchDate = parseResult.date;
-      final today = DateTime.now();
-      if (catchDate.isAfter(DateTime(today.year, today.month, today.day, 23, 59, 59))) {
-        ref.read(_catchStateProvider.notifier).state = _CatchState.futureDate;
-        return;
-      }
-
-      final screenshotUrl = await supabase.uploadScreenshot(file);
-      final existing = await supabase.fetchCard(parseResult.speciesName);
-
-      if (existing != null) {
-        final alreadyCaught = await supabase.hasCaughtOnDate(existing.id, catchDate);
-        if (alreadyCaught) {
-          ref.read(_catchStateProvider.notifier).state = _CatchState.duplicate;
-          return;
-        }
-        final oldCard = existing;
-        final updatedCard = await supabase.awardXp(existing, parseResult, screenshotUrl);
-        ref.invalidate(aviaryProvider);
-        ref.read(_catchStateProvider.notifier).state = _CatchState.idle;
-        if (context.mounted) {
-          if (updatedCard.level > oldCard.level) {
-            context.push('/level-up', extra: (oldCard: oldCard, newCard: updatedCard));
-          }
-        }
-      } else {
-        final newCard = await supabase.createCard(parseResult, screenshotUrl);
-        ref.invalidate(aviaryProvider);
-        ref.read(_catchStateProvider.notifier).state = _CatchState.idle;
-        if (context.mounted) context.push('/card-reveal', extra: newCard);
+      if (!context.mounted) return;
+      switch (result) {
+        case LogCatchNewLifer(:final card):
+          context.push('/card-reveal', extra: card);
+        case LogCatchXpAwarded(leveledUp: true, :final before, :final after):
+          context.push('/level-up', extra: (oldCard: before, newCard: after));
+        case LogCatchXpAwarded():
+        case LogCatchDuplicate():
+        case LogCatchFutureDated():
+          break;
       }
     } catch (e) {
-      ref.read(_catchStateProvider.notifier).state = _CatchState.idle;
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to parse screenshot: $e')),
@@ -408,9 +371,9 @@ class _ImagePreviewSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F0E8),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 32,

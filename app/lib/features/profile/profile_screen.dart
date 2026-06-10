@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/config.dart';
 import '../../core/providers.dart';
-import '../aviary/aviary_screen.dart';
+import '../aviary/aviary_providers.dart';
+import '../friends/friends_providers.dart';
 import 'edit_profile_screen.dart';
+import 'profile_providers.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -57,7 +60,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         : '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Profile'),
         backgroundColor: Colors.transparent,
@@ -202,7 +204,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 children: [
                                   TileLayer(
                                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                    userAgentPackageName: 'com.murmuration.murmuration',
+                                    userAgentPackageName: osmUserAgentPackageName,
                                   ),
                                   MarkerLayer(
                                     markers: pins.map((c) => Marker(
@@ -320,7 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: _isPublic ?? true,
                   onChanged: (v) async {
                     setState(() => _isPublic = v);
-                    await ref.read(supabaseServiceProvider).upsertProfile(isPublic: v);
+                    await ref.read(profileRepositoryProvider).upsertProfile(isPublic: v);
                   },
                 ),
                 Divider(
@@ -332,7 +334,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ListTile(
                   title: const Text('Sign out'),
                   onTap: () async {
-                    await ref.read(supabaseServiceProvider).signOut();
+                    await ref.read(profileRepositoryProvider).signOut();
                     if (context.mounted) context.go('/login');
                   },
                 ),
@@ -369,7 +371,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (_) => _DeleteConfirmSheet(
         onConfirm: () async {
           Navigator.of(context).pop();
-          await ref.read(supabaseServiceProvider).deleteAccount();
+          await ref.read(profileRepositoryProvider).deleteAccount();
           if (context.mounted) context.go('/login');
         },
       ),

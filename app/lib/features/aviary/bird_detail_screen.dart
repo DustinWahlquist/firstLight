@@ -4,14 +4,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/config.dart';
 import '../../core/providers.dart';
+import '../../domain/game_rules.dart';
+import '../../domain/sighting_rarity.dart';
 import '../../models/bird_card.dart';
 import '../../models/catch_log.dart';
-
-final _catchLogsProvider =
-    FutureProvider.family<List<CatchLog>, String>((ref, cardId) {
-  return ref.watch(supabaseServiceProvider).fetchCatchLogs(cardId);
-});
+import 'aviary_providers.dart';
 
 class BirdDetailScreen extends ConsumerStatefulWidget {
   const BirdDetailScreen({super.key, required this.card, this.ownerName});
@@ -36,7 +35,7 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
 
   Future<void> _loadLineArt() async {
     final url = await ref
-        .read(supabaseServiceProvider)
+        .read(aviaryRepositoryProvider)
         .fetchSpeciesLineArt(widget.card.speciesName);
     if (mounted && url != null) setState(() => _lineArtUrl = url);
   }
@@ -45,10 +44,9 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final card = widget.card;
-    final catchLogs = ref.watch(_catchLogsProvider(card.id));
+    final catchLogs = ref.watch(catchLogsProvider(card.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: Text(widget.ownerName != null
             ? "${widget.ownerName}'s ${card.speciesName}"
@@ -107,7 +105,7 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
                           children: [
                             TileLayer(
                               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                              userAgentPackageName: 'com.murmuration.murmuration',
+                              userAgentPackageName: osmUserAgentPackageName,
                             ),
                             MarkerLayer(
                               markers: pins.map((l) => Marker(
@@ -170,7 +168,7 @@ class _TradingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final xpToNext = BirdCard.xpForNextLevel(card.level);
+    final xpToNext = GameRules.xpForNextLevel(card.level);
     final xpProgress = (card.xp / xpToNext).clamp(0.0, 1.0);
 
     return Container(
@@ -647,13 +645,12 @@ class _CatchLogEntry extends StatelessWidget {
 
   (Color, String) _rarityInfo(ThemeData theme, String rarity, int xpAwarded) {
     final label = xpAwarded == 0 ? 'First catch' : '+$xpAwarded XP';
-    final lower = rarity.toLowerCase();
-    if (lower.contains('uncommon') || lower.contains('somewhat')) {
-      return (theme.colorScheme.secondary, label);
-    } else if (lower.contains('rare') || lower.contains('ultra')) {
-      return (theme.colorScheme.primary, label);
-    }
-    return (theme.colorScheme.outline, label);
+    final color = switch (SightingRarity.fromString(rarity)) {
+      SightingRarity.common => theme.colorScheme.outline,
+      SightingRarity.uncommon => theme.colorScheme.secondary,
+      SightingRarity.rare => theme.colorScheme.primary,
+    };
+    return (color, label);
   }
 }
 

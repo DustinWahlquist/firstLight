@@ -27,9 +27,9 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
   }
 
   Future<void> _load() async {
-    final service = ref.read(supabaseServiceProvider);
-    final theirFriends = await service.fetchFriendListFor(widget.userId);
-    final myFriends = await service.fetchFriends();
+    final repo = ref.read(friendsRepositoryProvider);
+    final theirFriends = await repo.fetchFriendListFor(widget.userId);
+    final myFriends = await repo.fetchFriends();
     if (!mounted) return;
     setState(() {
       _friends = theirFriends;
@@ -39,7 +39,7 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
   }
 
   Future<void> _sendRequest(String userId) async {
-    await ref.read(supabaseServiceProvider).sendFriendRequest(userId);
+    await ref.read(friendsRepositoryProvider).sendFriendRequest(userId);
     if (mounted) setState(() => _requestedIds.add(userId));
   }
 
@@ -51,7 +51,6 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
     final others = _friends?.where((f) => !_myFriendIds.contains(f.profile?.id)).toList() ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: Text("${widget.name}'s Friends"),
         backgroundColor: Colors.transparent,

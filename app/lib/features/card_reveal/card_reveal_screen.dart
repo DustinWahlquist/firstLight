@@ -43,7 +43,6 @@ class _CardRevealScreenState extends State<CardRevealScreen>
     final card = widget.card;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       body: SafeArea(
         child: Center(
           child: FadeTransition(

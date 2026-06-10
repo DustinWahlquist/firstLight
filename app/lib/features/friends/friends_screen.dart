@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../models/friendship.dart';
 import '../../models/user_profile.dart';
+import 'friends_providers.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   const FriendsScreen({super.key});
@@ -29,28 +30,28 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final q = _searchController.text.trim();
     if (q.isEmpty) { setState(() => _searchResults = null); return; }
     setState(() => _searching = true);
-    final results = await ref.read(supabaseServiceProvider).searchProfiles(q);
+    final results = await ref.read(profileRepositoryProvider).searchProfiles(q);
     if (mounted) setState(() { _searchResults = results; _searching = false; });
   }
 
   Future<void> _sendRequest(String userId) async {
-    await ref.read(supabaseServiceProvider).sendFriendRequest(userId);
+    await ref.read(friendsRepositoryProvider).sendFriendRequest(userId);
     if (mounted) setState(() => _requestedIds.add(userId));
   }
 
   Future<void> _accept(String friendshipId) async {
-    await ref.read(supabaseServiceProvider).acceptFriendRequest(friendshipId);
+    await ref.read(friendsRepositoryProvider).acceptFriendRequest(friendshipId);
     ref.invalidate(pendingFriendsProvider);
     ref.invalidate(friendsProvider);
   }
 
   Future<void> _decline(String friendshipId) async {
-    await ref.read(supabaseServiceProvider).declineFriendRequest(friendshipId);
+    await ref.read(friendsRepositoryProvider).declineFriendRequest(friendshipId);
     ref.invalidate(pendingFriendsProvider);
   }
 
   Future<void> _remove(String friendshipId) async {
-    await ref.read(supabaseServiceProvider).removeFriend(friendshipId);
+    await ref.read(friendsRepositoryProvider).removeFriend(friendshipId);
     ref.invalidate(friendsProvider);
     ref.invalidate(friendCountProvider);
   }
@@ -62,7 +63,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final pending = ref.watch(pendingFriendsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Friends'),
         backgroundColor: Colors.transparent,

@@ -44,12 +44,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _save() async {
     setState(() => _loading = true);
     try {
-      final supabase = ref.read(supabaseServiceProvider);
+      final profiles = ref.read(profileRepositoryProvider);
       String? avatarUrl;
       if (_pickedPhoto != null) {
-        avatarUrl = await supabase.uploadAvatar(_pickedPhoto!);
+        avatarUrl = await profiles.uploadAvatar(_pickedPhoto!);
       }
-      await supabase.updateProfile(
+      await profiles.upsertProfile(
         displayName: _nameController.text.trim(),
         avatarUrl: avatarUrl,
       );
@@ -76,7 +76,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         : (user?.email?.isNotEmpty == true ? user!.email![0].toUpperCase() : '?');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Edit Profile'),
         backgroundColor: Colors.transparent,
@@ -137,7 +136,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           color: theme.colorScheme.primary,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFF5F0E8),
+                            color: theme.colorScheme.surfaceContainerLow,
                             width: 2,
                           ),
                         ),

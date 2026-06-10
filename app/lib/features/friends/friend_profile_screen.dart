@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
+import '../../domain/game_rules.dart';
 import '../../models/bird_card.dart';
 import '../../models/friendship.dart';
 import '../../models/user_profile.dart';
@@ -29,7 +30,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
   }
 
   Future<void> _loadFriendship() async {
-    final f = await ref.read(supabaseServiceProvider).fetchFriendshipWith(widget.profile.id);
+    final f = await ref.read(friendsRepositoryProvider).fetchFriendshipWith(widget.profile.id);
     if (!mounted) return;
     setState(() { _friendship = f; _loadingFriendship = false; });
     if (_canSeeContent) _loadAviary();
@@ -43,12 +44,12 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
   Future<void> _loadAviary() async {
     if (_loadingAviary) return;
     setState(() => _loadingAviary = true);
-    final cards = await ref.read(supabaseServiceProvider).fetchAviaryFor(widget.profile.id);
+    final cards = await ref.read(aviaryRepositoryProvider).fetchAviaryFor(widget.profile.id);
     if (mounted) setState(() { _aviary = cards; _loadingAviary = false; });
   }
 
   Future<void> _sendRequest() async {
-    await ref.read(supabaseServiceProvider).sendFriendRequest(widget.profile.id);
+    await ref.read(friendsRepositoryProvider).sendFriendRequest(widget.profile.id);
     if (mounted) setState(() => _requestSent = true);
   }
 
@@ -81,7 +82,6 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: Text(name),
         backgroundColor: Colors.transparent,
@@ -229,7 +229,7 @@ class _AviaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final xpToNext = BirdCard.xpForNextLevel(card.level);
+    final xpToNext = GameRules.xpForNextLevel(card.level);
     final xpProgress = card.xp / xpToNext;
 
     return ListTile(

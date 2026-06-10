@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../models/feed_event.dart';
 import '../../models/scribble.dart';
 import '../../models/user_profile.dart';
+import 'feed_providers.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
@@ -16,7 +17,6 @@ class FeedScreen extends ConsumerWidget {
     final feed = ref.watch(feedProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         title: const Text('Feed'),
         backgroundColor: Colors.transparent,
@@ -35,7 +35,7 @@ class FeedScreen extends ConsumerWidget {
             child: ListView.separated(
               padding: const EdgeInsets.only(bottom: 32),
               itemCount: events.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 1,
                 indent: 16,
                 color: theme.colorScheme.outlineVariant,
@@ -113,7 +113,7 @@ class _FeedItemState extends ConsumerState<_FeedItem> {
   }
 
   Future<void> _togglePeck() async {
-    final service = ref.read(supabaseServiceProvider);
+    final service = ref.read(socialRepositoryProvider);
     setState(() {
       _hasPecked = !_hasPecked;
       _peckCount += _hasPecked ? 1 : -1;
@@ -135,7 +135,7 @@ class _FeedItemState extends ConsumerState<_FeedItem> {
   Future<void> _toggleScribbles() async {
     if (!_showScribbles && _scribbles == null && !_loadingScribbles) {
       setState(() => _loadingScribbles = true);
-      final loaded = await ref.read(supabaseServiceProvider).fetchScribbles(widget.event.id);
+      final loaded = await ref.read(socialRepositoryProvider).fetchScribbles(widget.event.id);
       if (mounted) setState(() { _scribbles = loaded; _loadingScribbles = false; });
     }
     if (mounted) setState(() => _showScribbles = !_showScribbles);
@@ -146,7 +146,8 @@ class _FeedItemState extends ConsumerState<_FeedItem> {
     if (text.isEmpty || _postingScribble) return;
     setState(() => _postingScribble = true);
     try {
-      final s = await ref.read(supabaseServiceProvider).addScribble(widget.event.id, text);
+      final s = await ref.read(socialRepositoryProvider).addScribble(widget.event.id, text);
+      if (!mounted) return;
       _scribbleController.clear();
       FocusScope.of(context).unfocus();
       setState(() {

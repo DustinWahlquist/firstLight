@@ -41,25 +41,6 @@ class BirdCard {
   final DateTime? lastCaughtAt;
   final DateTime createdAt;
 
-  static const Map<int, int> _xpThresholds = {
-    1: 0,
-    2: 20,
-    3: 50,
-    4: 90,
-    5: 140,
-  };
-
-  static int levelForXp(int xp) {
-    var level = 1;
-    for (final entry in _xpThresholds.entries) {
-      if (xp >= entry.value) level = entry.key;
-    }
-    return level;
-  }
-
-  static int xpForNextLevel(int currentLevel) =>
-      _xpThresholds[currentLevel + 1] ?? _xpThresholds.values.last;
-
   BirdCard copyWith({int? xp, int? level, int? catchCount, String? screenshotUrl, String? lineArtUrl}) =>
       BirdCard(
         id: id,
@@ -75,8 +56,11 @@ class BirdCard {
         facts: facts,
         migrationSpeed: migrationSpeed,
         endurance: endurance,
+        firstCatchLatitude: firstCatchLatitude,
+        firstCatchLongitude: firstCatchLongitude,
         screenshotUrl: screenshotUrl ?? this.screenshotUrl,
         lineArtUrl: lineArtUrl ?? this.lineArtUrl,
+        lastCaughtAt: lastCaughtAt,
         createdAt: createdAt,
       );
 
@@ -118,7 +102,11 @@ class BirdCard {
         'facts': facts,
         'migration_speed': migrationSpeed,
         'endurance': endurance,
+        'first_catch_latitude': firstCatchLatitude,
+        'first_catch_longitude': firstCatchLongitude,
         'screenshot_url': screenshotUrl,
+        'line_art_url': lineArtUrl,
+        'last_caught_at': lastCaughtAt?.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
       };
 }

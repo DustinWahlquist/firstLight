@@ -12,8 +12,7 @@ Extract only what is visible in the screenshot and return a JSON object with exa
 
 - species_name: common name of the bird (string)
 - scientific_name: Latin name (string)
-- rarity: card rarity tier — one of "Common", "Somewhat Rare", or "Ultra Rare" (string)
-- sighting_rarity: rarity of this specific sighting — one of "Common", "Uncommon", or "Rare" (string)
+- sighting_rarity: rarity of this specific sighting for its time of year and location — one of "Common", "Uncommon", or "Rare" (string)
 - date: date of sighting, ISO 8601 YYYY-MM-DD (string)
 - location: location name from the screenshot (string)
 
@@ -196,7 +195,6 @@ Deno.serve(async (req) => {
     await supabase.from('bird_species').upsert({
       species_name: speciesName,
       scientific_name: scientificName,
-      rarity: sighting.rarity,
       description,
       facts,
       migration_speed: migrationSpeed,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../domain/game_rules.dart';
 import '../../../models/bird_card.dart';
 
 class BirdCardTile extends StatelessWidget {
@@ -23,7 +24,7 @@ class _ListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final xpToNext = BirdCard.xpForNextLevel(card.level);
+    final xpToNext = GameRules.xpForNextLevel(card.level);
     final xpProgress = card.xp / xpToNext;
 
     return Card(
@@ -89,7 +90,7 @@ class _GridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final xpToNext = BirdCard.xpForNextLevel(card.level);
+    final xpToNext = GameRules.xpForNextLevel(card.level);
     final xpProgress = card.xp / xpToNext;
 
     return Card(

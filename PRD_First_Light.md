@@ -124,18 +124,17 @@ At the start of each First Light, Watchers roll to determine turn order.
   - Improved **base stats**
 - Leveling is **XP-based**, not catch-count based, to support future flexibility (e.g., rare birds give more XP per catch).
 
-### 6.3 Card Rarity
+### 6.3 Sighting Rarity
 
-- Rarity is tied to **real-world bird rarity and geographic distribution** — pulled dynamically from Merlin, which already tracks this data.
-- XP per catch scales with rarity:
+- Rarity is a property of the **individual sighting, not the species** — Merlin reports how rare a sighting is for its time of year and location, and the screenshot parse captures it.
+- There are exactly three tiers, and XP per catch scales with them:
 
-| Rarity | XP per Catch |
+| Sighting Rarity | XP per Catch |
 |---|---|
 | Common | 5 |
-| Somewhat Rare | 10 |
-| Ultra Rare | 15 |
+| Uncommon | 10 |
+| Rare | 15 |
 
-- Rare birds also have more powerful moves and potentially exclusive aesthetics.
 - **Endangered species** are included with in-app educational prompts and conservation messaging.
 
 ### 6.4 Card Anatomy
@@ -347,9 +346,9 @@ The MVP focuses exclusively on the card creation and leveling loop — proving t
 ### 18.2 Core Flow
 
 1. User imports a Merlin screenshot (camera roll or share sheet)
-2. Claude vision API parses the screenshot: bird species, rarity, date, location
+2. Claude vision API parses the screenshot: bird species, sighting rarity, date, location
 3. **New lifer:** Card created at Level 1 and added to the Aviary with a card reveal
-4. **Existing species:** XP awarded based on rarity (5 / 10 / 15); level-up walkthrough triggers if a threshold is crossed
+4. **Existing species:** XP awarded based on sighting rarity (Common 5 / Uncommon 10 / Rare 15); level-up walkthrough triggers if a threshold is crossed
 5. **1 catch per bird per day** enforced — duplicate submissions within the same calendar day are rejected
 
 ### 18.3 Card Art
