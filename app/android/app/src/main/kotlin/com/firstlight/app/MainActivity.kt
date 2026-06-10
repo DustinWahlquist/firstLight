@@ -1,4 +1,4 @@
-package com.murmuration.murmuration
+package com.firstlight.app
 
 import io.flutter.embedding.android.FlutterActivity
 
