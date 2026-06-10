@@ -1,9 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,30 +56,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _loading = true);
     try {
-      final url = Uri.parse('$supabaseUrl/auth/v1/recover');
-      final httpClient = HttpClient();
-      final request = await httpClient.postUrl(url);
-      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-      request.headers.set('apikey', supabaseAnonKey);
-      request.write(jsonEncode({'email': email}));
-      final response = await request.close();
-      final body = await response.transform(const Utf8Decoder()).join();
-      httpClient.close();
-
-      if (!mounted) return;
-      if (response.statusCode == 200) {
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'firstlight://login-callback',
+      );
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password reset email sent — check your inbox')),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error ${response.statusCode}: $body')),
-        );
       }
-    } catch (e) {
+    } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(e.message)),
         );
       }
     } finally {
