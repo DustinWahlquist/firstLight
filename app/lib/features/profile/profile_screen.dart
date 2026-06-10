@@ -2,11 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../../core/providers.dart';
+import '../../models/bird_card.dart';
 import '../aviary/aviary_providers.dart';
 import '../friends/friends_providers.dart';
 import 'edit_profile_screen.dart';
@@ -209,12 +211,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   MarkerLayer(
                                     markers: pins.map((c) => Marker(
                                       point: LatLng(c.firstCatchLatitude!, c.firstCatchLongitude!),
-                                      width: 28,
-                                      height: 28,
-                                      child: Icon(
-                                        Icons.flutter_dash,
-                                        size: 24,
-                                        color: Theme.of(context).colorScheme.primary,
+                                      width: 32,
+                                      height: 32,
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () => _showBirdPin(context, c),
+                                        child: Icon(
+                                          Icons.flutter_dash,
+                                          size: 24,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
                                       ),
                                     )).toList(),
                                   ),
@@ -357,6 +363,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showBirdPin(BuildContext context, BirdCard card) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: InkWell(
+          onTap: () {
+            Navigator.of(sheetContext).pop();
+            context.push('/bird-detail', extra: (card: card, ownerName: null));
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: card.lineArtUrl != null
+                      ? SvgPicture.network(card.lineArtUrl!, fit: BoxFit.contain)
+                      : Icon(
+                          Icons.flutter_dash,
+                          size: 32,
+                          color: theme.colorScheme.primary,
+                        ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(card.speciesName, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.place_outlined,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              card.firstCatchLocation.isEmpty
+                                  ? 'Unknown location'
+                                  : card.firstCatchLocation,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
