@@ -149,22 +149,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 label: 'STATS',
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(child: _StatCell(label: 'Lifers', value: '$lifers')),
-                      Expanded(child: _StatCell(label: 'Total catches', value: '$totalCatches')),
-                      Expanded(child: _StatCell(label: 'Total XP', value: '$totalXp')),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => context.push('/friends'),
-                          child: _StatCell(
-                            label: 'Friends',
-                            value: friendCount.maybeWhen(data: (n) => '$n', orElse: () => '…'),
-                            primary: true,
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: _StatCell(label: 'Lifers', value: '$lifers')),
+                        Expanded(child: _StatCell(label: 'Total catches', value: '$totalCatches')),
+                        Expanded(child: _StatCell(label: 'Total XP', value: '$totalXp')),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => context.push('/friends'),
+                            child: _StatCell(
+                              label: 'Friends',
+                              value: friendCount.maybeWhen(data: (n) => '$n', orElse: () => '…'),
+                              primary: true,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -611,7 +614,10 @@ class _StatCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Label pinned to the top, number to the bottom — so a wrapping label
+    // doesn't push its number out of line with the other cells.
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(

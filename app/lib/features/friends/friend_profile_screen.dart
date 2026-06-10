@@ -141,20 +141,23 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                   ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
                   : Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(child: _StatCell(label: 'Lifers', value: '${_aviary?.length ?? 0}')),
-                          Expanded(child: _StatCell(
-                            label: 'Total catches',
-                            value: '${_aviary?.fold(0, (s, c) => s + c.catchCount) ?? 0}',
-                          )),
-                          Expanded(child: _StatCell(
-                            label: 'Friends',
-                            value: '…',
-                            onTap: () => context.push('/friend-list',
-                                extra: (userId: profile.id, name: name)),
-                          )),
-                        ],
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: _StatCell(label: 'Lifers', value: '${_aviary?.length ?? 0}')),
+                            Expanded(child: _StatCell(
+                              label: 'Total catches',
+                              value: '${_aviary?.fold(0, (s, c) => s + c.catchCount) ?? 0}',
+                            )),
+                            Expanded(child: _StatCell(
+                              label: 'Friends',
+                              value: '…',
+                              onTap: () => context.push('/friend-list',
+                                  extra: (userId: profile.id, name: name)),
+                            )),
+                          ],
+                        ),
                       ),
                     ),
             ),
@@ -287,6 +290,7 @@ class _StatCell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
