@@ -26,11 +26,17 @@ class ProfileRepository {
     return {for (final r in rows) r['id'] as String: UserProfile.fromJson(r)};
   }
 
-  Future<void> upsertProfile({String? displayName, String? avatarUrl, bool? isPublic}) async {
+  Future<void> upsertProfile({
+    String? displayName,
+    String? avatarUrl,
+    bool? isPublic,
+    bool? notificationsEnabled,
+  }) async {
     final data = <String, dynamic>{'id': _userId};
     if (displayName != null) data['display_name'] = displayName;
     if (avatarUrl != null) data['avatar_url'] = avatarUrl;
     if (isPublic != null) data['is_public'] = isPublic;
+    if (notificationsEnabled != null) data['notifications_enabled'] = notificationsEnabled;
     await _client.from('profiles').upsert(data);
     // Keep auth metadata in sync
     final authData = <String, dynamic>{};

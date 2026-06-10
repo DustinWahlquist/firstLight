@@ -22,14 +22,19 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _notifications = false;
+  bool? _notifications;
   bool? _isPublic;
 
   @override
   void initState() {
     super.initState();
     ref.read(myProfileProvider.future).then((p) {
-      if (mounted) setState(() => _isPublic = p?.isPublic ?? true);
+      if (mounted) {
+        setState(() {
+          _isPublic = p?.isPublic ?? true;
+          _notifications = p?.notificationsEnabled ?? true;
+        });
+      }
     });
   }
 
@@ -309,8 +314,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SwitchListTile(
                   title: const Text('Notifications'),
-                  value: _notifications,
-                  onChanged: (v) => setState(() => _notifications = v),
+                  value: _notifications ?? true,
+                  onChanged: (v) async {
+                    setState(() => _notifications = v);
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .upsertProfile(notificationsEnabled: v);
+                  },
                 ),
                 Divider(
                   height: 1,

@@ -2,6 +2,7 @@ class UserProfile {
   const UserProfile({
     required this.id,
     required this.isPublic,
+    this.notificationsEnabled = true,
     this.displayName,
     this.avatarUrl,
     this.username,
@@ -12,6 +13,7 @@ class UserProfile {
   final String? avatarUrl;
   final String? username;
   final bool isPublic;
+  final bool notificationsEnabled;
 
   String get initials {
     final name = displayName ?? username ?? '';
@@ -21,13 +23,20 @@ class UserProfile {
     return name[0].toUpperCase();
   }
 
-  UserProfile copyWith({String? displayName, String? avatarUrl, String? username, bool? isPublic}) =>
+  UserProfile copyWith({
+    String? displayName,
+    String? avatarUrl,
+    String? username,
+    bool? isPublic,
+    bool? notificationsEnabled,
+  }) =>
       UserProfile(
         id: id,
         displayName: displayName ?? this.displayName,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         username: username ?? this.username,
         isPublic: isPublic ?? this.isPublic,
+        notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       );
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -36,6 +45,7 @@ class UserProfile {
         avatarUrl: json['avatar_url'] as String?,
         username: json['username'] as String?,
         isPublic: json['is_public'] as bool? ?? true,
+        notificationsEnabled: json['notifications_enabled'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -44,5 +54,6 @@ class UserProfile {
         'avatar_url': avatarUrl,
         'username': username,
         'is_public': isPublic,
+        'notifications_enabled': notificationsEnabled,
       };
 }
