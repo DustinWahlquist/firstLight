@@ -1,6 +1,6 @@
 /// Identifies the app to the OpenStreetMap tile server (required by their
 /// usage policy). Matches the iOS/Android bundle id.
-const osmUserAgentPackageName = 'com.firstlight.app';
+const osmUserAgentPackageName = 'studio.firstlightdev.firstlight';
 
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',

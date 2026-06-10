@@ -1,4 +1,4 @@
-package com.firstlight.app
+package studio.firstlightdev.firstlight
 
 import io.flutter.embedding.android.FlutterActivity
 
