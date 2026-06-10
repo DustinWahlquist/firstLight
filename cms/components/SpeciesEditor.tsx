@@ -1,8 +1,10 @@
 'use client'
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
-import { Species, SpeciesStatus, Move, Report, STATUS_META, ArtByLevel } from '@/lib/types'
+import {
+  createSpecies, fetchSpecies, resolveReport, updateSpecies, uploadArt,
+} from '@/lib/api'
+import { ArtByLevel, EMPTY_ART, Move, Species, SpeciesStatus, STATUS_META } from '@/lib/types'
 
 const STAT_LEVELS = [1, 2, 3, 4, 5] as const
 
@@ -106,36 +108,43 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-const BLANK_SPECIES: Partial<Species> = {
-  speciesName: '', scientificName: '', status: 'new',
+const BLANK_SPECIES: Species = {
+  speciesName: '', scientificName: '', status: 'draft',
   description: '', facts: [],
   migrationSpeed: 5, speedDelta: 0, endurance: 3, enduranceDelta: 0,
-  artByLevel: { 1: null, 2: null, 3: null, 4: null, 5: null },
+  lineArtUrl: null,
+  artByLevel: { ...EMPTY_ART },
   moves: [], reports: [],
 }
 
 export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promise<{ id: string }> }) {
   const params = use(paramsPromise)
-  const id = params.id
-  const isNew = id === 'new'
+  const isNew = params.id === 'new'
+  const speciesName = isNew ? '' : decodeURIComponent(params.id)
 
   const router = useRouter()
-  const supabase = createClient()
 
-  const [species, setSpecies] = useState<Partial<Species>>(BLANK_SPECIES)
+  const [species, setSpecies] = useState<Species>(BLANK_SPECIES)
   const [loading, setLoading] = useState(!isNew)
+  const [notFound, setNotFound] = useState(false)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'content' | 'art' | 'moves' | 'reports'>('content')
 
   useEffect(() => {
     if (isNew) return
     ;(async () => {
-      const { data } = await supabase.from('species').select('*').eq('id', id).single()
-      if (data) setSpecies(data as unknown as Species)
+      try {
+        const loaded = await fetchSpecies(speciesName)
+        if (loaded) setSpecies(loaded)
+        else setNotFound(true)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load species')
+      }
       setLoading(false)
     })()
-  }, [id])
+  }, [isNew, speciesName])
 
   const set = (patch: Partial<Species>) => {
     setSpecies(s => ({ ...s, ...patch }))
@@ -143,32 +152,53 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
   }
 
   const save = async () => {
-    setSaving(true)
-    if (isNew) {
-      const { data } = await supabase.from('species').insert([species]).select().single()
-      if (data) router.replace(`/species/${(data as any).id}`)
-    } else {
-      await supabase.from('species').update(species).eq('id', id)
+    if (!species.speciesName.trim()) {
+      setError('Species name is required')
+      return
     }
-    setDirty(false)
+    setSaving(true)
+    setError('')
+    try {
+      if (isNew) {
+        await createSpecies(species)
+        router.replace(`/species/${encodeURIComponent(species.speciesName)}`)
+      } else {
+        await updateSpecies(species)
+      }
+      setDirty(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed')
+    }
     setSaving(false)
   }
 
-  const resolveReport = async (reportId: string) => {
-    const reports = (species.reports ?? []).map(r => r.id === reportId ? { ...r, resolved: true } : r)
-    set({ reports })
-    await supabase.from('species_reports').update({ resolved: true }).eq('id', reportId)
+  const markResolved = async (reportId: string) => {
+    setSpecies(s => ({
+      ...s,
+      reports: s.reports.map(r => r.id === reportId ? { ...r, resolved: true } : r),
+    }))
+    try {
+      await resolveReport(reportId)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to resolve report')
+    }
   }
 
   if (loading) return (
     <div style={{ padding: 48, textAlign: 'center', color: '#9B968F', fontSize: 13 }}>Loading…</div>
   )
+  if (notFound) return (
+    <div style={{ padding: 48, textAlign: 'center', color: '#9B968F', fontSize: 13 }}>
+      Species “{speciesName}” not found.
+    </div>
+  )
 
+  const openReports = species.reports.filter(r => !r.resolved).length
   const tabs: { key: typeof activeTab; label: string }[] = [
     { key: 'content', label: 'Content' },
     { key: 'art', label: 'Art' },
     { key: 'moves', label: 'Moves' },
-    { key: 'reports', label: `Reports${(species.reports?.filter(r => !r.resolved).length ?? 0) > 0 ? ` (${species.reports!.filter(r => !r.resolved).length})` : ''}` },
+    { key: 'reports', label: `Reports${openReports > 0 ? ` (${openReports})` : ''}` },
   ]
 
   return (
@@ -194,7 +224,12 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
         <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1C1916', flex: 1 }}>
           {isNew ? 'New species' : (species.speciesName || 'Unnamed')}
         </span>
-        <StatusBadge status={(species.status ?? 'new') as SpeciesStatus} onChange={s => set({ status: s })} />
+        {error && (
+          <span style={{ fontSize: 12, color: '#991B1B', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {error}
+          </span>
+        )}
+        <StatusBadge status={species.status} onChange={s => set({ status: s })} />
         <button onClick={save} disabled={!dirty || saving} style={{
           height: 34, padding: '0 16px', borderRadius: 8,
           background: dirty ? '#2596BE' : '#E8E5DE',
@@ -229,36 +264,37 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
           <>
             <Section title="Identity">
               <Field label="Common Name">
-                <input value={species.speciesName ?? ''} onChange={e => set({ speciesName: e.target.value })} style={inputStyle} />
+                <input value={species.speciesName}
+                  onChange={e => set({ speciesName: e.target.value })}
+                  disabled={!isNew}
+                  title={isNew ? undefined : 'Species name is the shared key with the app and cannot be renamed'}
+                  style={{ ...inputStyle, ...(isNew ? {} : { background: '#F7F6F3', color: '#6B6560' }) }} />
               </Field>
               <Field label="Scientific Name">
-                <input value={species.scientificName ?? ''} onChange={e => set({ scientificName: e.target.value })}
+                <input value={species.scientificName} onChange={e => set({ scientificName: e.target.value })}
                   style={{ ...inputStyle, fontStyle: 'italic' }} />
               </Field>
               <Field label="Description">
-                <textarea value={species.description ?? ''} onChange={e => set({ description: e.target.value })}
+                <textarea value={species.description} onChange={e => set({ description: e.target.value })}
                   rows={4} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }} />
               </Field>
               <Field label="Fun Facts">
-                {(species.facts ?? []).map((fact, i) => (
+                {species.facts.map((fact, i) => (
                   <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                     <input value={fact}
                       onChange={e => {
-                        const facts = [...(species.facts ?? [])]
+                        const facts = [...species.facts]
                         facts[i] = e.target.value
                         set({ facts })
                       }}
                       style={{ ...inputStyle, flex: 1 }} />
-                    <button onClick={() => {
-                      const facts = (species.facts ?? []).filter((_, j) => j !== i)
-                      set({ facts })
-                    }} style={{
+                    <button onClick={() => set({ facts: species.facts.filter((_, j) => j !== i) })} style={{
                       width: 32, height: 36, borderRadius: 8, border: '1px solid #FECACA',
                       background: '#FEF2F2', color: '#991B1B', cursor: 'pointer', fontSize: 16,
                     }}>×</button>
                   </div>
                 ))}
-                <button onClick={() => set({ facts: [...(species.facts ?? []), ''] })} style={{
+                <button onClick={() => set({ facts: [...species.facts, ''] })} style={{
                   marginTop: 2, fontSize: 12.5, fontWeight: 600, color: '#2596BE',
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 }}>
@@ -268,17 +304,17 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
             </Section>
 
             <Section title="Stats">
-              <StatStepper label="Migration Speed" value={species.migrationSpeed ?? 5} max={10}
+              <StatStepper label="Migration Speed" value={species.migrationSpeed} max={10}
                 onChange={v => set({ migrationSpeed: v })} />
               <Field label="Speed Delta (per level)">
-                <input type="number" value={species.speedDelta ?? 0}
+                <input type="number" value={species.speedDelta}
                   onChange={e => set({ speedDelta: Number(e.target.value) })}
                   style={{ ...inputStyle, width: 100 }} />
               </Field>
-              <StatStepper label="Endurance" value={species.endurance ?? 3} max={5}
+              <StatStepper label="Endurance" value={species.endurance} max={5}
                 onChange={v => set({ endurance: v })} />
               <Field label="Endurance Delta (per level)">
-                <input type="number" value={species.enduranceDelta ?? 0}
+                <input type="number" value={species.enduranceDelta}
                   onChange={e => set({ enduranceDelta: Number(e.target.value) })}
                   style={{ ...inputStyle, width: 100 }} />
               </Field>
@@ -287,53 +323,40 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
         )}
 
         {activeTab === 'art' && (
-          <Section title="Art by Level">
-            <div style={{ fontSize: 12.5, color: '#6B6560', marginBottom: 16, lineHeight: 1.6 }}>
-              Upload one illustration per level. SVG preferred; PNG/WebP accepted.
-              Level 1 is the base form; Level 5 is the final evolved form.
-            </div>
-            {STAT_LEVELS.map(level => {
-              const url = (species.artByLevel as ArtByLevel)?.[level]
-              return (
-                <div key={level} style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '12px 0', borderBottom: '1px solid #F0EDE6',
-                }}>
-                  <div style={{
-                    width: 80, height: 80, borderRadius: 10, border: '1px solid #E8E5DE',
-                    background: '#F7F6F3', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, overflow: 'hidden',
-                  }}>
-                    {url
-                      ? <img src={url} alt={`Level ${level}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 11, color: '#C4BEB7' }}>Lv {level}</span>
-                    }
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1C1916', marginBottom: 4 }}>Level {level}</div>
-                    {url && (
-                      <div style={{ fontSize: 11.5, color: '#9B968F', marginBottom: 6,
-                        fontFamily: "'IBM Plex Mono', monospace", wordBreak: 'break-all' }}>
-                        {url}
-                      </div>
-                    )}
-                    <input type="text" placeholder="Paste image URL or upload…"
-                      value={url ?? ''}
-                      onChange={e => set({ artByLevel: { ...(species.artByLevel as ArtByLevel), [level]: e.target.value || null } })}
-                      style={{ ...inputStyle }} />
+          <>
+            {species.lineArtUrl && (
+              <Section title="Current App Art">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={species.lineArtUrl} alt="Line art"
+                    style={{ width: 80, height: 80, borderRadius: 10, border: '1px solid #E8E5DE', background: '#F7F6F3', objectFit: 'contain' }} />
+                  <div style={{ fontSize: 12.5, color: '#6B6560', lineHeight: 1.6 }}>
+                    AI-generated line art currently shown on cards in the app.
+                    Per-level art below will replace it once leveled card art ships.
                   </div>
                 </div>
-              )
-            })}
-          </Section>
+              </Section>
+            )}
+            <Section title="Art by Level">
+              <div style={{ fontSize: 12.5, color: '#6B6560', marginBottom: 16, lineHeight: 1.6 }}>
+                Upload one illustration per level (SVG preferred; PNG/WebP accepted), or paste a URL.
+                Level 1 is the base form; Level 5 is the final form.
+              </div>
+              {STAT_LEVELS.map(level => (
+                <ArtSlot key={level} level={level} species={species}
+                  onArtChange={(url) => set({ artByLevel: { ...species.artByLevel, [level]: url } })}
+                  onError={setError} />
+              ))}
+            </Section>
+          </>
         )}
 
         {activeTab === 'moves' && (
           <Section title="Moves">
-            {(species.moves ?? []).length === 0 && (
+            {species.moves.length === 0 && (
               <div style={{ color: '#9B968F', fontSize: 13, marginBottom: 12 }}>No moves yet.</div>
             )}
-            {(species.moves ?? []).map((move, i) => (
+            {species.moves.map((move, i) => (
               <div key={i} style={{
                 border: '1px solid #E8E5DE', borderRadius: 10, padding: 14, marginBottom: 12,
               }}>
@@ -341,7 +364,7 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                   <div style={{ flex: 2 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Name</label>
                     <input value={move.moveName} onChange={e => {
-                      const moves = [...(species.moves ?? [])]
+                      const moves = [...species.moves]
                       moves[i] = { ...moves[i], moveName: e.target.value }
                       set({ moves })
                     }} style={inputStyle} />
@@ -349,7 +372,7 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Category</label>
                     <select value={move.category} onChange={e => {
-                      const moves = [...(species.moves ?? [])]
+                      const moves = [...species.moves]
                       moves[i] = { ...moves[i], category: e.target.value as Move['category'] }
                       set({ moves })
                     }} style={{ ...inputStyle }}>
@@ -361,8 +384,8 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Unlock Level</label>
                     <select value={move.unlockLevel} onChange={e => {
-                      const moves = [...(species.moves ?? [])]
-                      moves[i] = { ...moves[i], unlockLevel: Number(e.target.value) as 1 | 3 | 5 }
+                      const moves = [...species.moves]
+                      moves[i] = { ...moves[i], unlockLevel: Number(e.target.value) as Move['unlockLevel'] }
                       set({ moves })
                     }} style={{ ...inputStyle }}>
                       {[1, 3, 5].map(l => <option key={l} value={l}>Level {l}</option>)}
@@ -372,7 +395,7 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                 <div style={{ marginBottom: 10 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Description</label>
                   <textarea value={move.description} rows={2} onChange={e => {
-                    const moves = [...(species.moves ?? [])]
+                    const moves = [...species.moves]
                     moves[i] = { ...moves[i], description: e.target.value }
                     set({ moves })
                   }} style={{ ...inputStyle, resize: 'vertical' }} />
@@ -381,7 +404,7 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Effect Type</label>
                     <input value={move.effectType} onChange={e => {
-                      const moves = [...(species.moves ?? [])]
+                      const moves = [...species.moves]
                       moves[i] = { ...moves[i], effectType: e.target.value }
                       set({ moves })
                     }} placeholder="e.g. damage, heal, buff" style={inputStyle} />
@@ -389,12 +412,12 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                   <div style={{ width: 100 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#9B968F', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Value</label>
                     <input type="number" value={move.effectValue} onChange={e => {
-                      const moves = [...(species.moves ?? [])]
+                      const moves = [...species.moves]
                       moves[i] = { ...moves[i], effectValue: Number(e.target.value) }
                       set({ moves })
                     }} style={inputStyle} />
                   </div>
-                  <button onClick={() => set({ moves: (species.moves ?? []).filter((_, j) => j !== i) })}
+                  <button onClick={() => set({ moves: species.moves.filter((_, j) => j !== i) })}
                     style={{
                       height: 36, padding: '0 12px', borderRadius: 8,
                       border: '1px solid #FECACA', background: '#FEF2F2',
@@ -405,26 +428,29 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                 </div>
               </div>
             ))}
-            <button onClick={() => set({
-              moves: [...(species.moves ?? []), {
-                moveName: '', category: 'Offense', description: '',
-                effectType: '', effectValue: 0, unlockLevel: 1,
-              }]
-            })} style={{
-              padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              border: '1px solid #E8E5DE', background: 'white', color: '#2596BE', cursor: 'pointer',
-            }}>
-              + Add move
-            </button>
+            {species.moves.length < 3 && (
+              <button onClick={() => set({
+                moves: [...species.moves, {
+                  moveName: '', category: 'Offense', description: '',
+                  effectType: '', effectValue: 0,
+                  unlockLevel: ([1, 3, 5] as const)[species.moves.length],
+                }]
+              })} style={{
+                padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                border: '1px solid #E8E5DE', background: 'white', color: '#2596BE', cursor: 'pointer',
+              }}>
+                + Add move
+              </button>
+            )}
           </Section>
         )}
 
         {activeTab === 'reports' && (
           <Section title="User Reports">
-            {(species.reports ?? []).length === 0 ? (
+            {species.reports.length === 0 ? (
               <div style={{ color: '#9B968F', fontSize: 13 }}>No reports for this species.</div>
             ) : (
-              (species.reports ?? []).map(report => (
+              species.reports.map(report => (
                 <div key={report.id} style={{
                   border: `1px solid ${report.resolved ? '#E8E5DE' : '#FECACA'}`,
                   borderRadius: 10, padding: 14, marginBottom: 10,
@@ -448,7 +474,7 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
                       <div style={{ fontSize: 13, color: '#3D3934', lineHeight: 1.5 }}>{report.message}</div>
                     </div>
                     {!report.resolved && (
-                      <button onClick={() => resolveReport(report.id)} style={{
+                      <button onClick={() => markResolved(report.id)} style={{
                         padding: '5px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600,
                         border: '1px solid #BBF7D0', background: '#F0FDF4',
                         color: '#166534', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -462,6 +488,81 @@ export default function SpeciesEditor({ paramsPromise }: { paramsPromise: Promis
             )}
           </Section>
         )}
+      </div>
+    </div>
+  )
+}
+
+function ArtSlot({ level, species, onArtChange, onError }: {
+  level: 1 | 2 | 3 | 4 | 5
+  species: Species
+  onArtChange: (url: string | null) => void
+  onError: (msg: string) => void
+}) {
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const url = species.artByLevel[level]
+
+  const upload = async (file: File) => {
+    if (!species.speciesName.trim()) {
+      onError('Set the species name before uploading art')
+      return
+    }
+    setUploading(true)
+    try {
+      onArtChange(await uploadArt(species.speciesName, level, file))
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Upload failed')
+    }
+    setUploading(false)
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 14,
+      padding: '12px 0', borderBottom: '1px solid #F0EDE6',
+    }}>
+      <div style={{
+        width: 80, height: 80, borderRadius: 10, border: '1px solid #E8E5DE',
+        background: '#F7F6F3', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, overflow: 'hidden',
+      }}>
+        {url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={url} alt={`Level ${level}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          : <span style={{ fontSize: 11, color: '#C4BEB7' }}>Lv {level}</span>
+        }
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1C1916' }}>Level {level}</div>
+          <button onClick={() => fileInput.current?.click()} disabled={uploading} style={{
+            padding: '3px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+            border: '1px solid #E8E5DE', background: 'white', color: '#2596BE',
+            cursor: uploading ? 'default' : 'pointer',
+          }}>
+            {uploading ? 'Uploading…' : 'Upload'}
+          </button>
+          {url && (
+            <button onClick={() => onArtChange(null)} style={{
+              padding: '3px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+              border: '1px solid #FECACA', background: '#FEF2F2', color: '#991B1B', cursor: 'pointer',
+            }}>
+              Remove
+            </button>
+          )}
+          <input ref={fileInput} type="file" accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) upload(file)
+              e.target.value = ''
+            }} />
+        </div>
+        <input type="text" placeholder="…or paste an image URL"
+          value={url ?? ''}
+          onChange={e => onArtChange(e.target.value || null)}
+          style={{ ...inputStyle }} />
       </div>
     </div>
   )

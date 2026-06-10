@@ -166,9 +166,10 @@ Sidebar:
 ## 6. Tech Notes (for dev handoff, not designer)
 
 - Reads/writes directly to Supabase `bird_species`, `species_moves`, and `species_reports` tables
-- Art uploads to Supabase Storage bucket `species-art`, keyed by `{species_name}/level_{n}.svg`
-- Supabase RLS: CMS service role key bypasses RLS (internal tool, not user-facing)
-- Stack suggestion: Next.js + Tailwind + Supabase JS client; hosted on Vercel
+- Art uploads to Supabase Storage bucket `species-art`, keyed by `{species_slug}/level_{n}.{ext}`
+- Auth: the CMS signs in with Supabase Auth (anon key + session) like any client. Because app players authenticate against the same project, write access is gated by RLS on membership in the `cms_admins` table (checked via the `is_cms_admin()` security-definer function) — no service role key in the browser.
+- Filing a report escalates the species to Needs Review via a database trigger
+- Stack: Next.js + Supabase JS client; data access centralized in `cms/lib/api.ts`
 
 ---
 

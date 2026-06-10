@@ -1,64 +1,59 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
-import { Species, SpeciesStatus, STATUS_META, STATUS_ORDER } from '@/lib/types'
-
-const PAGE_SIZE = 40
+import { bulkUpdateStatus, listSpecies } from '@/lib/api'
+import { SpeciesStatus, SpeciesSummary, STATUS_META, STATUS_ORDER } from '@/lib/types'
 
 export default function SpeciesList() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = (searchParams.get('status') ?? '') as SpeciesStatus | ''
 
-  const [species, setSpecies] = useState<Species[]>([])
+  const [species, setSpecies] = useState<SpeciesSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const supabase = createClient()
-
   const fetchSpecies = useCallback(async () => {
     setLoading(true)
-    let q = supabase
-      .from('species')
-      .select('*')
-      .order('status', { ascending: true })
-      .order('species_name', { ascending: true })
-      .limit(PAGE_SIZE)
-
-    if (statusFilter) q = q.eq('status', statusFilter)
-    if (search) q = q.ilike('species_name', `%${search}%`)
-
-    const { data } = await q
-    if (data) setSpecies(data as unknown as Species[])
+    setError('')
+    try {
+      setSpecies(await listSpecies({ status: statusFilter, search }))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load species')
+    }
     setLoading(false)
   }, [statusFilter, search])
 
   useEffect(() => { fetchSpecies() }, [fetchSpecies])
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (name: string) => {
     setSelected(s => {
       const n = new Set(s)
-      n.has(id) ? n.delete(id) : n.add(id)
+      if (n.has(name)) n.delete(name)
+      else n.add(name)
       return n
     })
   }
 
   const toggleAll = () => {
     if (selected.size === species.length) setSelected(new Set())
-    else setSelected(new Set(species.map(s => s.id)))
+    else setSelected(new Set(species.map(s => s.speciesName)))
   }
 
-  const bulkUpdateStatus = async (status: SpeciesStatus) => {
-    await supabase.from('species').update({ status }).in('id', [...selected])
+  const applyBulkStatus = async (status: SpeciesStatus) => {
+    await bulkUpdateStatus([...selected], status)
     setSelected(new Set())
     fetchSpecies()
   }
 
+  const openEditor = (name: string) =>
+    router.push(`/species/${encodeURIComponent(name)}`)
+
   const sorted = [...species].sort((a, b) =>
     (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]) ||
-    a.speciesName?.localeCompare(b.speciesName ?? '') || 0
+    a.speciesName.localeCompare(b.speciesName)
   )
 
   return (
@@ -117,7 +112,7 @@ export default function SpeciesList() {
           <span style={{ fontSize: 13, fontWeight: 600, color: '#1A7FA8' }}>{selected.size} selected</span>
           <div style={{ flex: 1 }} />
           {(['new', 'draft', 'needs_review', 'published'] as SpeciesStatus[]).map(s => (
-            <button key={s} onClick={() => bulkUpdateStatus(s)} style={{
+            <button key={s} onClick={() => applyBulkStatus(s)} style={{
               height: 28, padding: '0 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
               border: `1px solid ${STATUS_META[s].border}`,
               background: STATUS_META[s].bg, color: STATUS_META[s].text,
@@ -139,6 +134,8 @@ export default function SpeciesList() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#9B968F', fontSize: 13 }}>Loading…</div>
+        ) : error ? (
+          <div style={{ padding: 48, textAlign: 'center', color: '#991B1B', fontSize: 13 }}>{error}</div>
         ) : sorted.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#9B968F', fontSize: 13 }}>No species found.</div>
         ) : (
@@ -161,20 +158,19 @@ export default function SpeciesList() {
             <tbody>
               {sorted.map((sp, i) => {
                 const meta = STATUS_META[sp.status]
-                const openReports = sp.reports?.filter(r => !r.resolved).length ?? 0
                 return (
                   <tr
-                    key={sp.id}
+                    key={sp.speciesName}
                     style={{
                       borderBottom: '1px solid #F0EDE6',
-                      background: selected.has(sp.id) ? '#F0F9FF' : i % 2 === 0 ? 'white' : '#FAFAF8',
+                      background: selected.has(sp.speciesName) ? '#F0F9FF' : i % 2 === 0 ? 'white' : '#FAFAF8',
                       cursor: 'pointer',
                     }}
-                    onClick={() => router.push(`/species/${sp.id}`)}
+                    onClick={() => openEditor(sp.speciesName)}
                   >
                     <td style={{ padding: '10px 8px 10px 20px', textAlign: 'center' }}
-                      onClick={e => { e.stopPropagation(); toggleSelect(sp.id) }}>
-                      <input type="checkbox" checked={selected.has(sp.id)} onChange={() => toggleSelect(sp.id)}
+                      onClick={e => { e.stopPropagation(); toggleSelect(sp.speciesName) }}>
+                      <input type="checkbox" checked={selected.has(sp.speciesName)} onChange={() => toggleSelect(sp.speciesName)}
                         style={{ cursor: 'pointer' }} />
                     </td>
                     <td style={{ padding: '10px 12px' }}>
@@ -195,13 +191,13 @@ export default function SpeciesList() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 12px' }}>
-                      {openReports > 0 && (
+                      {sp.openReports > 0 && (
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
                           padding: '2px 7px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                           background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA',
                         }}>
-                          {openReports} open
+                          {sp.openReports} open
                         </span>
                       )}
                     </td>

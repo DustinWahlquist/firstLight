@@ -8,6 +8,8 @@ export interface ArtByLevel {
   5: string | null
 }
 
+export const EMPTY_ART: ArtByLevel = { 1: null, 2: null, 3: null, 4: null, 5: null }
+
 export interface Move {
   id?: string
   moveName: string
@@ -26,8 +28,8 @@ export interface Report {
   resolved: boolean
 }
 
+/** Species content row. speciesName is the primary key shared with the app. */
 export interface Species {
-  id: string
   speciesName: string
   scientificName: string
   status: SpeciesStatus
@@ -37,27 +39,41 @@ export interface Species {
   speedDelta: number
   endurance: number
   enduranceDelta: number
+  lineArtUrl: string | null
   artByLevel: ArtByLevel
   moves: Move[]
   reports: Report[]
 }
 
+/** Lightweight row for the species table. */
+export interface SpeciesSummary {
+  speciesName: string
+  scientificName: string
+  status: SpeciesStatus
+  openReports: number
+}
+
+export interface SuspiciousUser {
+  user: string
+  catches: number
+  uniqueSpecies: number
+  dupes: number
+  note: string
+}
+
 export interface StatsData {
+  speciesTotal: number
+  speciesByStatus: Record<SpeciesStatus, number>
   totalUsers: number
   newUsersThisWeek: number
   totalCatches: number
   catchesThisWeek: number
-  avgCatchesPerUser: number
-  openReports: number
-  totalReports: number
-  avgResolutionDays: number
-  weeklySignups: number[]
-  weekLabels: string[]
+  dailyCatches: number[]
+  dayLabels: string[]
   mostCaught: { name: string; count: number }[]
   cardLevelDist: { level: string; count: number }[]
-  pecksPerWeek: number[]
-  scribblesPerWeek: number[]
-  reportVolume: number[]
+  openReports: number
+  suspiciousUsers: SuspiciousUser[]
 }
 
 export const STATUS_META: Record<SpeciesStatus, {

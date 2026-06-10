@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -64,9 +64,27 @@ const NAV_BOTTOM = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserEmail(user?.email ?? '')
+      setUserName((user?.user_metadata?.display_name as string) ?? '')
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const displayName = userName || userEmail || '…'
+  const initials = displayName
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(p => p[0]?.toUpperCase() ?? '')
+    .join('')
 
   const searchParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('status') ?? ''
@@ -150,11 +168,11 @@ export default function Sidebar() {
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 6px', borderRadius: 8, marginBottom: 6 }}>
             <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #2596BE, #1B6B3D)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-              DW
+              {initials || '?'}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1C1916', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Dustin W.</div>
-              <div style={{ fontSize: 11, color: '#9B968F' }}>Owner</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1C1916', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+              <div style={{ fontSize: 11, color: '#9B968F' }}>Content Admin</div>
             </div>
           </div>
         )}

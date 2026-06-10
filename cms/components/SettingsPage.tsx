@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -7,6 +7,10 @@ const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 11px', borderRadius: 8,
   border: '1px solid #E8E5DE', background: 'white',
   fontSize: 13.5, color: '#1C1916', outline: 'none', boxSizing: 'border-box',
+}
+
+const readOnlyStyle: React.CSSProperties = {
+  ...inputStyle, background: '#F7F6F3', color: '#9B968F',
 }
 
 function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
@@ -36,10 +40,82 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+function Feedback({ kind, text }: { kind: 'ok' | 'error'; text: string }) {
+  const ok = kind === 'ok'
+  return (
+    <div style={{
+      padding: '7px 11px', borderRadius: 8, fontSize: 12.5, marginBottom: 12,
+      background: ok ? '#F0FDF4' : '#FEF2F2',
+      border: `1px solid ${ok ? '#BBF7D0' : '#FECACA'}`,
+      color: ok ? '#166534' : '#991B1B',
+    }}>
+      {text}
+    </div>
+  )
+}
+
+const ctaStyle: React.CSSProperties = {
+  padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+  background: '#2596BE', color: 'white', border: 'none', cursor: 'pointer',
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const supabase = createClient()
+
+  const [email, setEmail] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [accountMsg, setAccountMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [savingAccount, setSavingAccount] = useState(false)
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [savingPassword, setSavingPassword] = useState(false)
+
   const [signingOut, setSigningOut] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setEmail(user?.email ?? '')
+      setDisplayName((user?.user_metadata?.display_name as string) ?? '')
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const saveAccount = async () => {
+    setSavingAccount(true)
+    setAccountMsg(null)
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName.trim() },
+    })
+    setAccountMsg(error
+      ? { kind: 'error', text: error.message }
+      : { kind: 'ok', text: 'Saved.' })
+    setSavingAccount(false)
+  }
+
+  const updatePassword = async () => {
+    setPasswordMsg(null)
+    if (newPassword.length < 8) {
+      setPasswordMsg({ kind: 'error', text: 'Password must be at least 8 characters.' })
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ kind: 'error', text: 'Passwords do not match.' })
+      return
+    }
+    setSavingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      setPasswordMsg({ kind: 'error', text: error.message })
+    } else {
+      setPasswordMsg({ kind: 'ok', text: 'Password updated.' })
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+    setSavingPassword(false)
+  }
 
   const signOut = async () => {
     setSigningOut(true)
@@ -58,38 +134,33 @@ export default function SettingsPage() {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', maxWidth: 560 }}>
         <Section title="Account" sub="Your First Light CMS account">
+          {accountMsg && <Feedback kind={accountMsg.kind} text={accountMsg.text} />}
           <Field label="Display Name">
-            <input defaultValue="Dustin W." style={inputStyle} />
+            <input value={displayName} onChange={e => setDisplayName(e.target.value)} style={inputStyle} />
           </Field>
           <Field label="Email">
-            <input defaultValue="dustin@firstlight.app" type="email" style={inputStyle} />
+            <input value={email} type="email" readOnly style={readOnlyStyle} />
           </Field>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <button style={{
-              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              background: '#2596BE', color: 'white', border: 'none', cursor: 'pointer',
-            }}>
-              Save changes
+            <button onClick={saveAccount} disabled={savingAccount} style={ctaStyle}>
+              {savingAccount ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </Section>
 
-        <Section title="Change Password" sub="You'll be signed out after changing your password">
-          <Field label="Current Password">
-            <input type="password" style={inputStyle} />
-          </Field>
+        <Section title="Change Password">
+          {passwordMsg && <Feedback kind={passwordMsg.kind} text={passwordMsg.text} />}
           <Field label="New Password">
-            <input type="password" style={inputStyle} />
+            <input type="password" value={newPassword}
+              onChange={e => setNewPassword(e.target.value)} style={inputStyle} />
           </Field>
           <Field label="Confirm New Password">
-            <input type="password" style={inputStyle} />
+            <input type="password" value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)} style={inputStyle} />
           </Field>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <button style={{
-              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              background: '#2596BE', color: 'white', border: 'none', cursor: 'pointer',
-            }}>
-              Update password
+            <button onClick={updatePassword} disabled={savingPassword} style={ctaStyle}>
+              {savingPassword ? 'Updating…' : 'Update password'}
             </button>
           </div>
         </Section>
@@ -97,13 +168,11 @@ export default function SettingsPage() {
         <Section title="Supabase" sub="Read-only — set via environment variables">
           <Field label="Project URL">
             <input value={process.env.NEXT_PUBLIC_SUPABASE_URL ?? '(not set)'} readOnly
-              style={{ ...inputStyle, background: '#F7F6F3', color: '#9B968F',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }} />
+              style={{ ...readOnlyStyle, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }} />
           </Field>
           <Field label="Anon Key">
             <input value="••••••••••••••••••••" readOnly
-              style={{ ...inputStyle, background: '#F7F6F3', color: '#9B968F',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }} />
+              style={{ ...readOnlyStyle, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }} />
           </Field>
         </Section>
 
