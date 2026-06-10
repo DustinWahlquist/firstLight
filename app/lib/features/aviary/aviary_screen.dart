@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../data/vision_service.dart';
 import '../../domain/game_rules.dart';
 import '../../domain/log_catch_use_case.dart';
 import '../../models/bird_card.dart';
+import '../../models/parse_result.dart';
 import 'aviary_providers.dart';
 import 'log_catch_controller.dart';
 import 'widgets/bird_card_tile.dart';
@@ -22,8 +24,8 @@ class AviaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final aviary = ref.watch(aviaryProvider);
-    final catchState = ref.watch(logCatchControllerProvider).status;
-    final duplicateDate = ref.watch(logCatchControllerProvider).duplicateDate;
+    final flowState = ref.watch(logCatchControllerProvider);
+    final catchState = flowState.status;
     final sortOrder = ref.watch(_sortOrderProvider);
     final ascending = ref.watch(_sortAscendingProvider);
 
@@ -72,7 +74,9 @@ class AviaryScreen extends ConsumerWidget {
               final sorted = [...cards]..sort((a, b) => ascending ? cmp(a, b) : cmp(b, a));
               return Column(
               children: [
-                if (catchState == CatchFlowStatus.duplicate || catchState == CatchFlowStatus.futureDate)
+                if (catchState == CatchFlowStatus.duplicate ||
+                    catchState == CatchFlowStatus.futureDate ||
+                    catchState == CatchFlowStatus.unverifiable)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Card(
@@ -83,9 +87,14 @@ class AviaryScreen extends ConsumerWidget {
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
-                                catchState == CatchFlowStatus.futureDate
-                                    ? 'This screenshot is dated in the future. Please check the date on your device.'
-                                    : _duplicateMessage(duplicateDate),
+                                switch (catchState) {
+                                  CatchFlowStatus.futureDate =>
+                                    'This screenshot is dated in the future. Please check the date on your device.',
+                                  CatchFlowStatus.unverifiable =>
+                                    flowState.unverifiableReason ??
+                                        "Couldn't verify this catch from the screenshot.",
+                                  _ => _duplicateMessage(flowState.duplicateDate),
+                                },
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onErrorContainer,
                                 ),
@@ -277,7 +286,12 @@ class AviaryScreen extends ConsumerWidget {
     final controller = ref.read(logCatchControllerProvider.notifier);
 
     try {
-      var parseResult = await controller.parseScreenshot(file);
+      ParseResult parseResult;
+      try {
+        parseResult = await controller.parseScreenshot(file);
+      } on UnverifiableScreenshotException {
+        return; // The rejection banner explains it.
+      }
 
       if (parseResult.latitude == null && context.mounted) {
         final manualLocation = await showDialog<String>(

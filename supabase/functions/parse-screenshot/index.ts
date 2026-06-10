@@ -8,13 +8,20 @@ const supabase = createClient(
 );
 
 const VISION_PROMPT = `You are parsing a screenshot from the Merlin Bird ID app.
-Extract only what is visible in the screenshot and return a JSON object with exactly these keys:
+You are a transcriber, NOT a bird identifier. Only transcribe text that is
+clearly legible in the screenshot. NEVER identify, guess, or infer the species
+from the bird's photo — if the species name text is covered, cropped, blurred,
+cut off, or absent, you must report it as not visible, even if you recognize
+the bird in the picture.
 
-- species_name: common name of the bird (string)
-- scientific_name: Latin name (string)
+Return a JSON object with exactly these keys:
+
+- name_visible: is the bird's common name fully visible and legible as text in the screenshot? (boolean)
+- species_name: the common name exactly as written in the screenshot, or null if name_visible is false (string | null)
+- scientific_name: Latin name as written, or null if not visible (string | null)
 - sighting_rarity: rarity of this specific sighting for its time of year and location — one of "Common", "Uncommon", or "Rare" (string)
-- date: date of sighting, ISO 8601 YYYY-MM-DD (string)
-- location: location name from the screenshot (string)
+- date: date of sighting as shown, ISO 8601 YYYY-MM-DD, or null if no date is visible (string | null)
+- location: location name from the screenshot, or null if not visible (string | null)
 
 Return only valid JSON. No explanation or markdown.`;
 
@@ -105,9 +112,27 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Refuse to proceed unless the screenshot itself verifies the catch —
+  // a guessed species or date would corrupt the user's collection.
+  const missing: string[] = [];
+  if (sighting.name_visible !== true || !sighting.species_name) {
+    missing.push("the bird's name");
+  }
+  if (!sighting.date) missing.push('the sighting date');
+  if (missing.length > 0) {
+    return new Response(JSON.stringify({
+      error: 'unverifiable',
+      message: `Couldn't verify this catch — ${missing.join(' and ')} ` +
+        `${missing.length > 1 ? "aren't" : "isn't"} clearly visible in the screenshot.`,
+    }), {
+      status: 422,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const speciesName = sighting.species_name as string;
-  const scientificName = sighting.scientific_name as string;
-  const location = sighting.location as string;
+  const scientificName = (sighting.scientific_name as string) ?? '';
+  const location = (sighting.location as string) ?? '';
 
   // Step 2: Check shared species cache
   const { data: cached } = await supabase

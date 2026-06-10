@@ -1,18 +1,26 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
+import '../../data/vision_service.dart';
 import '../../domain/log_catch_use_case.dart';
 import '../../models/parse_result.dart';
 import 'aviary_providers.dart';
 
-enum CatchFlowStatus { idle, loading, duplicate, futureDate }
+enum CatchFlowStatus { idle, loading, duplicate, futureDate, unverifiable }
 
 /// [duplicateDate] is set only when status is duplicate — it's the
-/// screenshot's catch day, which may not be today.
-typedef CatchFlowState = ({CatchFlowStatus status, DateTime? duplicateDate});
+/// screenshot's catch day, which may not be today. [unverifiableReason]
+/// is set only when status is unverifiable.
+typedef CatchFlowState = ({
+  CatchFlowStatus status,
+  DateTime? duplicateDate,
+  String? unverifiableReason,
+});
 
-const CatchFlowState _idle = (status: CatchFlowStatus.idle, duplicateDate: null);
-const CatchFlowState _loading = (status: CatchFlowStatus.loading, duplicateDate: null);
+const CatchFlowState _idle =
+    (status: CatchFlowStatus.idle, duplicateDate: null, unverifiableReason: null);
+const CatchFlowState _loading =
+    (status: CatchFlowStatus.loading, duplicateDate: null, unverifiableReason: null);
 
 final logCatchControllerProvider =
     NotifierProvider<LogCatchController, CatchFlowState>(
@@ -29,11 +37,18 @@ class LogCatchController extends Notifier<CatchFlowState> {
   void dismissBanner() => state = _idle;
 
   /// Parses the screenshot. Rethrows on failure so the screen can surface
-  /// the error; state is reset either way.
+  /// the error; an unverifiable screenshot shows the rejection banner.
   Future<ParseResult> parseScreenshot(File file) async {
     state = _loading;
     try {
       return await ref.read(visionServiceProvider).parseScreenshot(file);
+    } on UnverifiableScreenshotException catch (e) {
+      state = (
+        status: CatchFlowStatus.unverifiable,
+        duplicateDate: null,
+        unverifiableReason: e.message,
+      );
+      rethrow;
     } catch (_) {
       state = _idle;
       rethrow;
@@ -47,10 +62,16 @@ class LogCatchController extends Notifier<CatchFlowState> {
       final result =
           await ref.read(logCatchUseCaseProvider)(parse: parse, screenshot: file);
       state = switch (result) {
-        LogCatchDuplicate(:final date) =>
-          (status: CatchFlowStatus.duplicate, duplicateDate: date),
-        LogCatchFutureDated() =>
-          (status: CatchFlowStatus.futureDate, duplicateDate: null),
+        LogCatchDuplicate(:final date) => (
+            status: CatchFlowStatus.duplicate,
+            duplicateDate: date,
+            unverifiableReason: null,
+          ),
+        LogCatchFutureDated() => (
+            status: CatchFlowStatus.futureDate,
+            duplicateDate: null,
+            unverifiableReason: null,
+          ),
         _ => _idle,
       };
       if (result is LogCatchNewLifer || result is LogCatchXpAwarded) {
