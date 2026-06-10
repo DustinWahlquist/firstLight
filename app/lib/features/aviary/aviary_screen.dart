@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../domain/game_rules.dart';
 import '../../domain/log_catch_use_case.dart';
 import '../../models/bird_card.dart';
 import 'aviary_providers.dart';
@@ -21,7 +22,8 @@ class AviaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final aviary = ref.watch(aviaryProvider);
-    final catchState = ref.watch(logCatchControllerProvider);
+    final catchState = ref.watch(logCatchControllerProvider).status;
+    final duplicateDate = ref.watch(logCatchControllerProvider).duplicateDate;
     final sortOrder = ref.watch(_sortOrderProvider);
     final ascending = ref.watch(_sortAscendingProvider);
 
@@ -83,7 +85,7 @@ class AviaryScreen extends ConsumerWidget {
                               child: Text(
                                 catchState == CatchFlowStatus.futureDate
                                     ? 'This screenshot is dated in the future. Please check the date on your device.'
-                                    : 'Already logged this bird today. Come back tomorrow!',
+                                    : _duplicateMessage(duplicateDate),
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onErrorContainer,
                                 ),
@@ -164,6 +166,18 @@ class AviaryScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _duplicateMessage(DateTime? date) {
+    if (date == null || GameRules.isSameCalendarDay(date, DateTime.now())) {
+      return 'Already logged this bird today. Come back tomorrow!';
+    }
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return 'Already logged this bird on ${months[date.month - 1]} ${date.day}. '
+        'One catch per bird per day.';
   }
 
   void _showSortMenu(BuildContext context, WidgetRef ref) {

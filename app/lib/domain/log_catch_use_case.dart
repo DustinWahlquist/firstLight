@@ -23,9 +23,12 @@ class LogCatchXpAwarded extends LogCatchResult {
   bool get leveledUp => after.level > before.level;
 }
 
-/// This bird was already caught on this calendar day.
+/// This bird was already caught on the screenshot's calendar day.
 class LogCatchDuplicate extends LogCatchResult {
-  const LogCatchDuplicate();
+  const LogCatchDuplicate(this.date);
+
+  /// The day in question — the screenshot's date, not necessarily today.
+  final DateTime date;
 }
 
 /// The screenshot is dated after today.
@@ -57,7 +60,7 @@ class LogCatchUseCase {
     final existing = await _aviary.fetchCard(parse.speciesName);
     if (existing != null &&
         await _aviary.hasCaughtOnDate(existing.id, parse.date)) {
-      return const LogCatchDuplicate();
+      return LogCatchDuplicate(parse.date);
     }
 
     final screenshotUrl = await _aviary.uploadScreenshot(screenshot);
@@ -74,7 +77,7 @@ class LogCatchUseCase {
         // card it found, which the fetch above already loaded.
         return LogCatchXpAwarded(before: existing!, after: _cardFrom(outcome));
       case 'duplicate':
-        return const LogCatchDuplicate();
+        return LogCatchDuplicate(parse.date);
       case 'future_dated':
         return const LogCatchFutureDated();
       case final kind:

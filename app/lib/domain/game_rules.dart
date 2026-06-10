@@ -37,4 +37,7 @@ abstract final class GameRules {
   /// the screenshot claims to be from the future.
   static bool isFutureDated(DateTime catchDate, DateTime now) =>
       catchDate.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
+
+  static bool isSameCalendarDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }

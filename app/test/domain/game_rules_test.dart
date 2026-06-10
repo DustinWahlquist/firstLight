@@ -70,6 +70,21 @@ void main() {
     });
   });
 
+  group('GameRules.isSameCalendarDay', () {
+    test('compares calendar days, not 24-hour windows', () {
+      expect(
+        GameRules.isSameCalendarDay(
+            DateTime(2026, 6, 9, 1), DateTime(2026, 6, 9, 23)),
+        isTrue,
+      );
+      expect(
+        GameRules.isSameCalendarDay(
+            DateTime(2026, 6, 9, 23), DateTime(2026, 6, 10, 1)),
+        isFalse,
+      );
+    });
+  });
+
   group('GameRules.isLiferMilestone', () {
     test('matches only the milestone counts', () {
       expect(GameRules.isLiferMilestone(10), isTrue);

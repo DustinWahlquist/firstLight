@@ -95,9 +95,13 @@ void main() {
       ..existingCard = _card()
       ..alreadyCaughtToday = true;
 
-    final result = await useCase(parse: _parse(), screenshot: screenshot);
+    final result = await useCase(
+      parse: _parse(date: DateTime(2026, 6, 5)),
+      screenshot: screenshot,
+    );
 
     expect(result, isA<LogCatchDuplicate>());
+    expect((result as LogCatchDuplicate).date, DateTime(2026, 6, 5));
     expect(aviary.uploadCount, 0);
     expect(aviary.submitted, isNull);
   });
@@ -135,14 +139,18 @@ void main() {
     expect((result as LogCatchXpAwarded).leveledUp, isFalse);
   });
 
-  test('respects a server-side duplicate verdict', () async {
+  test('respects a server-side duplicate verdict and carries the catch day', () async {
     aviary
       ..existingCard = _card()
       ..serverOutcome = {'kind': 'duplicate'};
 
-    final result = await useCase(parse: _parse(), screenshot: screenshot);
+    final result = await useCase(
+      parse: _parse(date: DateTime(2026, 6, 5)),
+      screenshot: screenshot,
+    );
 
     expect(result, isA<LogCatchDuplicate>());
+    expect((result as LogCatchDuplicate).date, DateTime(2026, 6, 5));
   });
 
   test('throws on an unknown outcome kind', () async {
