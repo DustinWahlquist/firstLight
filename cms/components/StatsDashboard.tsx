@@ -5,6 +5,9 @@ import { StatsData } from '@/lib/types'
 
 type Tab = 'birds' | 'product' | 'suspicious'
 
+const pctOfUsers = (count: number, total: number) =>
+  total > 0 ? `${Math.round((count / total) * 100)}% of users` : undefined
+
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div style={{
@@ -144,7 +147,11 @@ export default function StatsDashboard() {
                   <div style={{ fontSize: 12, color: '#9B968F', marginBottom: 16 }}>Daily breakdown, last 7 days</div>
                   <MiniBar data={stats.dailyCatches} labels={stats.dayLabels} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                  <StatCard label="Public Profiles" value={stats.publicProfiles}
+                    sub={pctOfUsers(stats.publicProfiles, stats.totalUsers)} />
+                  <StatCard label="Notifications On" value={stats.notificationsOn}
+                    sub={pctOfUsers(stats.notificationsOn, stats.totalUsers)} />
                   <StatCard label="Open Reports" value={stats.openReports} sub="across all species" />
                   <StatCard label="Avg Catches/User"
                     value={stats.totalUsers > 0 ? (stats.totalCatches / stats.totalUsers).toFixed(1) : '—'} />

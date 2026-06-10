@@ -223,7 +223,7 @@ export async function fetchStats(): Promise<StatsData> {
   const client = supabase()
   const [speciesRes, profilesRes, cardsRes, logsRes, reportsRes] = await Promise.all([
     client.from('bird_species').select('species_name, status'),
-    client.from('profiles').select('id, created_at'),
+    client.from('profiles').select('id, created_at, is_public, notifications_enabled'),
     client.from('bird_cards').select('id, user_id, species_name, xp, level, catch_count'),
     client.from('catch_logs').select('user_id, bird_card_id, caught_at, xp_awarded'),
     client.from('species_reports').select('id, resolved'),
@@ -287,6 +287,8 @@ export async function fetchStats(): Promise<StatsData> {
     speciesByStatus,
     totalUsers: profiles.length,
     newUsersThisWeek,
+    publicProfiles: profiles.filter(p => p.is_public !== false).length,
+    notificationsOn: profiles.filter(p => p.notifications_enabled !== false).length,
     totalCatches: logs.length,
     catchesThisWeek,
     dailyCatches,

@@ -66,6 +66,8 @@ export interface StatsData {
   speciesByStatus: Record<SpeciesStatus, number>
   totalUsers: number
   newUsersThisWeek: number
+  publicProfiles: number
+  notificationsOn: number
   totalCatches: number
   catchesThisWeek: number
   dailyCatches: number[]
