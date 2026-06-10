@@ -319,9 +319,17 @@ class AviaryScreen extends ConsumerWidget {
       if (!context.mounted) return;
       final result = await controller.submit(parseResult, file);
 
-      final accepted = result is LogCatchNewLifer || result is LogCatchXpAwarded;
-      if (accepted && picked.assetId != null && context.mounted) {
-        await _offerScreenshotDeletion(context, picked.assetId!);
+      // Offer cleanup whenever the screenshot's catch is in the aviary —
+      // including duplicates, where it was logged previously.
+      final inAviary = result is LogCatchNewLifer ||
+          result is LogCatchXpAwarded ||
+          result is LogCatchDuplicate;
+      if (inAviary && picked.assetId != null && context.mounted) {
+        await _offerScreenshotDeletion(
+          context,
+          picked.assetId!,
+          alreadyLogged: result is LogCatchDuplicate,
+        );
       }
 
       if (!context.mounted) return;
@@ -346,14 +354,17 @@ class AviaryScreen extends ConsumerWidget {
 
   Future<void> _offerScreenshotDeletion(
     BuildContext context,
-    String assetId,
-  ) async {
+    String assetId, {
+    bool alreadyLogged = false,
+  }) async {
     final delete = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Catch logged!'),
-        content: const Text(
-          'Delete the screenshot from your photo library?',
+        title: Text(alreadyLogged ? 'Already logged' : 'Catch logged!'),
+        content: Text(
+          alreadyLogged
+              ? 'This catch is already in your aviary. Delete the screenshot from your photo library?'
+              : 'Delete the screenshot from your photo library?',
         ),
         actions: [
           TextButton(
