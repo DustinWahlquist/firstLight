@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/providers.dart';
+import '../../data/geocoding_service.dart';
 import '../../data/vision_service.dart';
 import '../../domain/game_rules.dart';
 import '../../domain/log_catch_use_case.dart';
@@ -296,13 +299,20 @@ class AviaryScreen extends ConsumerWidget {
       }
 
       if (parseResult.latitude == null && context.mounted) {
-        final manualLocation = await showDialog<String>(
+        final manual = await showDialog<ManualLocation>(
           context: context,
           barrierDismissible: false,
-          builder: (_) => _LocationDialog(initialLocation: parseResult.location),
+          builder: (_) => _LocationDialog(
+            initialLocation: parseResult.location,
+            geocoder: ref.read(geocodingServiceProvider),
+          ),
         );
-        if (manualLocation != null && manualLocation.isNotEmpty) {
-          parseResult = parseResult.copyWith(location: manualLocation);
+        if (manual != null && manual.name.isNotEmpty) {
+          parseResult = parseResult.copyWith(
+            location: manual.name,
+            latitude: manual.latitude,
+            longitude: manual.longitude,
+          );
         }
       }
 
@@ -343,8 +353,7 @@ class AviaryScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Catch logged!'),
         content: const Text(
-          'Delete the screenshot from your photo library? '
-          'It will move to Recently Deleted for 30 days.',
+          'Delete the screenshot from your photo library?',
         ),
         actions: [
           TextButton(
@@ -364,9 +373,12 @@ class AviaryScreen extends ConsumerWidget {
   }
 }
 
+typedef ManualLocation = ({String name, double? latitude, double? longitude});
+
 class _LocationDialog extends StatefulWidget {
-  const _LocationDialog({required this.initialLocation});
+  const _LocationDialog({required this.initialLocation, required this.geocoder});
   final String initialLocation;
+  final GeocodingService geocoder;
 
   @override
   State<_LocationDialog> createState() => _LocationDialogState();
@@ -374,55 +386,129 @@ class _LocationDialog extends StatefulWidget {
 
 class _LocationDialogState extends State<_LocationDialog> {
   late final TextEditingController _controller;
+  Timer? _debounce;
+  List<PlaceSuggestion> _suggestions = [];
+  bool _searching = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialLocation);
+    if (widget.initialLocation.trim().isNotEmpty) {
+      _search(widget.initialLocation);
+    }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
+
+  void _onChanged(String text) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () => _search(text));
+  }
+
+  Future<void> _search(String query) async {
+    if (query.trim().length < 3) {
+      if (mounted) setState(() => _suggestions = []);
+      return;
+    }
+    setState(() => _searching = true);
+    final results = await widget.geocoder.search(query);
+    if (!mounted) return;
+    // Ignore stale results that arrive after the text has changed again.
+    if (_controller.text != query) return;
+    setState(() {
+      _suggestions = results;
+      _searching = false;
+    });
+  }
+
+  void _pickSuggestion(PlaceSuggestion s) => Navigator.of(context)
+      .pop((name: s.name, latitude: s.latitude, longitude: s.longitude));
+
+  void _saveTyped() => Navigator.of(context)
+      .pop((name: _controller.text.trim(), latitude: null, longitude: null));
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
       title: const Text('Where was this?'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "We couldn't pinpoint this location on the map. Enter a place name to save with this catch.",
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "We couldn't pinpoint this location on the map. Search for the place so this catch shows up on your map.",
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Location',
-              hintText: 'e.g. Central Park, New York',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Location',
+                hintText: 'e.g. Central Park, New York',
+                border: const OutlineInputBorder(),
+                suffixIcon: _searching
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+              ),
+              onChanged: _onChanged,
+              onSubmitted: (_) => _saveTyped(),
             ),
-            onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
-          ),
-        ],
+            if (_suggestions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 220),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _suggestions.length,
+                  itemBuilder: (context, i) {
+                    final s = _suggestions[i];
+                    return ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      leading: Icon(
+                        Icons.place_outlined,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(s.name, style: theme.textTheme.bodyMedium),
+                      onTap: () => _pickSuggestion(s),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(widget.initialLocation),
+          onPressed: () => Navigator.of(context).pop(
+            (name: widget.initialLocation, latitude: null, longitude: null),
+          ),
           child: const Text('Skip'),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          onPressed: _saveTyped,
           child: const Text('Save'),
         ),
       ],

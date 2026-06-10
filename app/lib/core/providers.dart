@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/aviary_repository.dart';
 import '../data/friends_repository.dart';
+import '../data/geocoding_service.dart';
 import '../data/profile_repository.dart';
 import '../data/social_repository.dart';
 import '../data/vision_service.dart';
@@ -42,6 +43,10 @@ final friendsRepositoryProvider = Provider<FriendsRepository>(
 
 final visionServiceProvider = Provider<VisionService>(
   (ref) => VisionService(ref.watch(supabaseClientProvider)),
+);
+
+final geocodingServiceProvider = Provider<GeocodingService>(
+  (ref) => GeocodingService(),
 );
 
 final logCatchUseCaseProvider = Provider<LogCatchUseCase>(
