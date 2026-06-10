@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../data/vision_service.dart';
 import '../../domain/game_rules.dart';
 import '../../domain/log_catch_use_case.dart';
@@ -10,6 +9,7 @@ import '../../models/bird_card.dart';
 import '../../models/parse_result.dart';
 import 'aviary_providers.dart';
 import 'log_catch_controller.dart';
+import 'screenshot_picker.dart';
 import 'widgets/bird_card_tile.dart';
 
 enum _SortOrder { dateAdded, lastCatch, level, alphabetical }
@@ -264,26 +264,28 @@ class AviaryScreen extends ConsumerWidget {
   }
 
   Future<void> _pickImage(BuildContext context, WidgetRef ref) async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
+    final picked = await pickScreenshot(context);
     if (picked == null || !context.mounted) return;
 
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ImagePreviewSheet(file: File(picked.path)),
+      builder: (_) => _ImagePreviewSheet(file: picked.file),
     );
 
     if (confirmed != true || !context.mounted) return;
 
-    await _submitCatch(context, ref, File(picked.path));
+    await _submitCatch(context, ref, picked);
   }
 
-  Future<void> _submitCatch(BuildContext context, WidgetRef ref, File file) async {
+  Future<void> _submitCatch(
+    BuildContext context,
+    WidgetRef ref,
+    PickedScreenshot picked,
+  ) async {
     final controller = ref.read(logCatchControllerProvider.notifier);
+    final file = picked.file;
 
     try {
       ParseResult parseResult;
@@ -307,6 +309,11 @@ class AviaryScreen extends ConsumerWidget {
       if (!context.mounted) return;
       final result = await controller.submit(parseResult, file);
 
+      final accepted = result is LogCatchNewLifer || result is LogCatchXpAwarded;
+      if (accepted && picked.assetId != null && context.mounted) {
+        await _offerScreenshotDeletion(context, picked.assetId!);
+      }
+
       if (!context.mounted) return;
       switch (result) {
         case LogCatchNewLifer(:final card):
@@ -324,6 +331,35 @@ class AviaryScreen extends ConsumerWidget {
           SnackBar(content: Text('Failed to parse screenshot: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _offerScreenshotDeletion(
+    BuildContext context,
+    String assetId,
+  ) async {
+    final delete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Catch logged!'),
+        content: const Text(
+          'Delete the screenshot from your photo library? '
+          'It will move to Recently Deleted for 30 days.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (delete == true) {
+      await deleteScreenshotAsset(assetId);
     }
   }
 }
