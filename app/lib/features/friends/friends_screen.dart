@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
@@ -126,14 +125,23 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   ],
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(const ClipboardData(text: 'https://firstlight.app/invite'));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invite link copied!')),
-                      );
-                    },
+                    onPressed: null,
                     icon: const Icon(Icons.link, size: 18),
-                    label: const Text('Share invite link'),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Share invite link'),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('Coming soon', style: theme.textTheme.labelSmall),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

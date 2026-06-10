@@ -61,7 +61,10 @@ class AviaryScreen extends ConsumerWidget {
                 _SortOrder.dateAdded    => a.createdAt.compareTo(b.createdAt),
                 _SortOrder.lastCatch    => (a.lastCaughtAt ?? a.createdAt)
                                               .compareTo(b.lastCaughtAt ?? b.createdAt),
-                _SortOrder.level        => a.level.compareTo(b.level),
+                // Level ties break on XP progress within the level.
+                _SortOrder.level        => a.level != b.level
+                                              ? a.level.compareTo(b.level)
+                                              : a.xp.compareTo(b.xp),
                 _SortOrder.alphabetical => a.speciesName.compareTo(b.speciesName),
               };
               final sorted = [...cards]..sort((a, b) => ascending ? cmp(a, b) : cmp(b, a));
