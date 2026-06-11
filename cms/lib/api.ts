@@ -221,14 +221,15 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 export async function fetchStats(): Promise<StatsData> {
   const client = supabase()
-  const [speciesRes, profilesRes, cardsRes, logsRes, reportsRes] = await Promise.all([
+  const [speciesRes, profilesRes, cardsRes, logsRes, reportsRes, sortEventsRes] = await Promise.all([
     client.from('bird_species').select('species_name, status'),
     client.from('profiles').select('id, created_at, is_public, notifications_enabled'),
     client.from('bird_cards').select('id, user_id, species_name, xp, level, catch_count'),
     client.from('catch_logs').select('user_id, bird_card_id, caught_at, xp_awarded'),
     client.from('species_reports').select('id, resolved'),
+    client.from('usage_events').select('value').eq('event', 'aviary_sort'),
   ])
-  for (const res of [speciesRes, profilesRes, cardsRes, logsRes, reportsRes]) {
+  for (const res of [speciesRes, profilesRes, cardsRes, logsRes, reportsRes, sortEventsRes]) {
     if (res.error) throw res.error
   }
   const species = speciesRes.data ?? []
@@ -297,7 +298,26 @@ export async function fetchStats(): Promise<StatsData> {
     cardLevelDist,
     openReports: reports.filter(r => !r.resolved).length,
     suspiciousUsers: findSuspiciousUsers(cards, logs),
+    aviarySortUsage: countSortUsage(sortEventsRes.data ?? []),
   }
+}
+
+const SORT_LABELS: Record<string, string> = {
+  alphabetical: 'Alphabetical',
+  level: 'Level',
+  lastCatch: 'Last catch',
+  dateAdded: 'Date added',
+}
+
+function countSortUsage(events: { value: string | null }[]) {
+  const counts = new Map<string, number>()
+  for (const e of events) {
+    const label = SORT_LABELS[e.value ?? ''] ?? e.value ?? 'Unknown'
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
 }
 
 /** Flags same-day duplicate catches and card XP that doesn't match the

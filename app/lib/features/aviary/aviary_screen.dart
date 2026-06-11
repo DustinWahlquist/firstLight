@@ -252,6 +252,8 @@ class AviaryScreen extends ConsumerWidget {
                             ref.read(_sortOrderProvider.notifier).state = v;
                             ref.read(_sortAscendingProvider.notifier).state =
                                 v == _SortOrder.alphabetical;
+                            // Deliberate choice only — the default is never logged.
+                            ref.read(usageEventsProvider).log('aviary_sort', v.name);
                           }
                         },
                       );

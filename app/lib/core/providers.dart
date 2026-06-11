@@ -5,6 +5,7 @@ import '../data/friends_repository.dart';
 import '../data/geocoding_service.dart';
 import '../data/profile_repository.dart';
 import '../data/social_repository.dart';
+import '../data/usage_events_repository.dart';
 import '../data/vision_service.dart';
 import '../domain/log_catch_use_case.dart';
 
@@ -47,6 +48,10 @@ final visionServiceProvider = Provider<VisionService>(
 
 final geocodingServiceProvider = Provider<GeocodingService>(
   (ref) => GeocodingService(),
+);
+
+final usageEventsProvider = Provider<UsageEventsRepository>(
+  (ref) => UsageEventsRepository(ref.watch(supabaseClientProvider)),
 );
 
 final logCatchUseCaseProvider = Provider<LogCatchUseCase>(

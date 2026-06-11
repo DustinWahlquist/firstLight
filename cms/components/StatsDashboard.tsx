@@ -39,9 +39,12 @@ function MiniBar({ data, labels }: { data: number[]; labels?: string[] }) {
   )
 }
 
-function RankedBars({ items }: { items: { name: string; count: number }[] }) {
+function RankedBars({ items, emptyText = 'No catches logged yet.' }: {
+  items: { name: string; count: number }[]
+  emptyText?: string
+}) {
   if (items.length === 0) {
-    return <div style={{ fontSize: 13, color: '#9B968F' }}>No catches logged yet.</div>
+    return <div style={{ fontSize: 13, color: '#9B968F' }}>{emptyText}</div>
   }
   const top = items[0].count
   return (
@@ -147,7 +150,7 @@ export default function StatsDashboard() {
                   <div style={{ fontSize: 12, color: '#9B968F', marginBottom: 16 }}>Daily breakdown, last 7 days</div>
                   <MiniBar data={stats.dailyCatches} labels={stats.dayLabels} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
                   <StatCard label="Public Profiles" value={stats.publicProfiles}
                     sub={pctOfUsers(stats.publicProfiles, stats.totalUsers)} />
                   <StatCard label="Notifications On" value={stats.notificationsOn}
@@ -155,6 +158,14 @@ export default function StatsDashboard() {
                   <StatCard label="Open Reports" value={stats.openReports} sub="across all species" />
                   <StatCard label="Avg Catches/User"
                     value={stats.totalUsers > 0 ? (stats.totalCatches / stats.totalUsers).toFixed(1) : '—'} />
+                </div>
+                <div style={{ background: 'white', border: '1px solid #E8E5DE', borderRadius: 12, padding: 20 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1C1916', marginBottom: 4 }}>Aviary Sort Choices</div>
+                  <div style={{ fontSize: 12, color: '#9B968F', marginBottom: 16 }}>
+                    Times users actively switched the aviary sort — the default (alphabetical) is never counted
+                  </div>
+                  <RankedBars items={stats.aviarySortUsage}
+                    emptyText="No sort changes logged yet." />
                 </div>
               </>
             )}

@@ -76,6 +76,8 @@ export interface StatsData {
   cardLevelDist: { level: string; count: number }[]
   openReports: number
   suspiciousUsers: SuspiciousUser[]
+  /** Counts of deliberate aviary sort choices (defaults are never logged). */
+  aviarySortUsage: { name: string; count: number }[]
 }
 
 export const STATUS_META: Record<SpeciesStatus, {
