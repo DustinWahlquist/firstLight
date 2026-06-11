@@ -79,6 +79,22 @@ void main() {
     useCase = LogCatchUseCase(aviary: aviary, now: () => now);
   });
 
+  test('precheck rejects duplicates without uploading', () async {
+    aviary
+      ..existingCard = _card()
+      ..alreadyCaughtToday = true;
+
+    final rejection = await useCase.precheck(_parse(date: DateTime(2026, 6, 5)));
+
+    expect(rejection, isA<LogCatchDuplicate>());
+    expect((rejection as LogCatchDuplicate).date, DateTime(2026, 6, 5));
+    expect(aviary.uploadCount, 0);
+  });
+
+  test('precheck passes a loggable catch', () async {
+    expect(await useCase.precheck(_parse()), isNull);
+  });
+
   test('fast-fails future-dated screenshots without uploading', () async {
     final result = await useCase(
       parse: _parse(date: DateTime(2026, 6, 10)),

@@ -55,6 +55,27 @@ class LogCatchController extends Notifier<CatchFlowState> {
     }
   }
 
+  /// Rejection check before the user is asked for anything (e.g. a manual
+  /// location). Returns the rejection and shows its banner, or null when
+  /// the flow may continue.
+  Future<LogCatchResult?> precheck(ParseResult parse) async {
+    final rejection = await ref.read(logCatchUseCaseProvider).precheck(parse);
+    state = switch (rejection) {
+      LogCatchDuplicate(:final date) => (
+          status: CatchFlowStatus.duplicate,
+          duplicateDate: date,
+          unverifiableReason: null,
+        ),
+      LogCatchFutureDated() => (
+          status: CatchFlowStatus.futureDate,
+          duplicateDate: null,
+          unverifiableReason: null,
+        ),
+      _ => _loading,
+    };
+    return rejection;
+  }
+
   /// Submits the parsed catch and refreshes the aviary on success.
   Future<LogCatchResult> submit(ParseResult parse, File file) async {
     state = _loading;

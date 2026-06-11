@@ -298,6 +298,21 @@ class AviaryScreen extends ConsumerWidget {
         return; // The rejection banner explains it.
       }
 
+      // Reject duplicates and future dates before asking for a location.
+      final rejection = await controller.precheck(parseResult);
+      if (rejection != null) {
+        if (rejection is LogCatchDuplicate &&
+            picked.assetId != null &&
+            context.mounted) {
+          await _offerScreenshotDeletion(
+            context,
+            picked.assetId!,
+            alreadyLogged: true,
+          );
+        }
+        return;
+      }
+
       if (parseResult.latitude == null && context.mounted) {
         final manual = await showDialog<ManualLocation>(
           context: context,

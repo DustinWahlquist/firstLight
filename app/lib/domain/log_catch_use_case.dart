@@ -49,20 +49,29 @@ class LogCatchUseCase {
   final AviaryRepository _aviary;
   final DateTime Function() _now;
 
-  Future<LogCatchResult> call({
-    required ParseResult parse,
-    required File screenshot,
-  }) async {
+  /// Pre-submission rejection check — run this before asking the user for
+  /// anything (like a manual location), so wasted effort fails fast.
+  /// Returns null when the catch looks loggable.
+  Future<LogCatchResult?> precheck(ParseResult parse) async {
     if (GameRules.isFutureDated(parse.date, _now())) {
       return const LogCatchFutureDated();
     }
-
     final existing = await _aviary.fetchCard(parse.speciesName);
     if (existing != null &&
         await _aviary.hasCaughtOnDate(existing.id, parse.date)) {
       return LogCatchDuplicate(parse.date);
     }
+    return null;
+  }
 
+  Future<LogCatchResult> call({
+    required ParseResult parse,
+    required File screenshot,
+  }) async {
+    final rejection = await precheck(parse);
+    if (rejection != null) return rejection;
+
+    final existing = await _aviary.fetchCard(parse.speciesName);
     final screenshotUrl = await _aviary.uploadScreenshot(screenshot);
     final outcome = await _aviary.submitCatch(
       parse: parse,
