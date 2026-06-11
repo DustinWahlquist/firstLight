@@ -183,7 +183,7 @@ class AviaryScreen extends ConsumerWidget {
 
   String _duplicateMessage(DateTime? date) {
     if (date == null || GameRules.isSameCalendarDay(date, DateTime.now())) {
-      return 'Already logged this bird today. Come back tomorrow!';
+      return 'Already logged this bird today.';
     }
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
