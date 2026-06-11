@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_code_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,8 +14,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _codeController = TextEditingController();
   bool _loading = false;
   bool _sent = false;
+  bool _resetSent = false;
   bool _passwordMode = true;
   bool _obscurePassword = true;
 
@@ -22,7 +25,48 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _codeController.dispose();
     super.dispose();
+  }
+
+  /// Verifies an emailed code. [type] is OtpType.email for sign-in codes
+  /// and OtpType.recovery for password reset codes.
+  Future<bool> _verifyCode(OtpType type) async {
+    final code = _codeController.text.trim();
+    if (code.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter the code from your email')),
+      );
+      return false;
+    }
+    setState(() => _loading = true);
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        email: _emailController.text.trim(),
+        token: code,
+        type: type,
+      );
+      return true;
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _verifySignInCode() async {
+    // A session from a sign-in code routes to the feed automatically.
+    await _verifyCode(OtpType.email);
+  }
+
+  Future<void> _verifyResetCode() async {
+    final ok = await _verifyCode(OtpType.recovery);
+    if (ok && mounted) context.go('/reset-password');
   }
 
   Future<void> _sendMagicLink() async {
@@ -35,7 +79,12 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         emailRedirectTo: 'firstlight://login-callback',
       );
-      if (mounted) setState(() => _sent = true);
+      if (mounted) {
+        setState(() {
+          _sent = true;
+          _codeController.clear();
+        });
+      }
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -62,9 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
         redirectTo: 'firstlight://login-callback',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset email sent — check your inbox')),
-        );
+        setState(() {
+          _resetSent = true;
+          _codeController.clear();
+        });
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -194,7 +244,40 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSubmitted: (_) =>
                     _passwordMode ? _signInWithPassword() : _sendMagicLink(),
               ),
-              if (_passwordMode) ...[
+              if (_passwordMode && _resetSent) ...[
+                const SizedBox(height: 16),
+                Card(
+                  color: theme.colorScheme.primaryContainer,
+                  child: const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'We emailed you a password reset code.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AuthCodeField(
+                  controller: _codeController,
+                  onSubmitted: (_) => _verifyResetCode(),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loading ? null : _verifyResetCode,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Verify code'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => setState(() => _resetSent = false),
+                  child: const Text('Back to sign in'),
+                ),
+              ] else if (_passwordMode) ...[
                 const SizedBox(height: 12),
                 TextField(
                   controller: _passwordController,
@@ -245,14 +328,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
-                      'Check your email for a magic link to sign in.',
+                      'We emailed you a sign-in code.',
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
+                AuthCodeField(
+                  controller: _codeController,
+                  onSubmitted: (_) => _verifySignInCode(),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loading ? null : _verifySignInCode,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Verify code'),
+                ),
+                const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => setState(() => _sent = false),
+                  onPressed: () => setState(() {
+                    _sent = false;
+                    _codeController.clear();
+                  }),
                   child: const Text('Use a different email'),
                 ),
               ] else ...[
