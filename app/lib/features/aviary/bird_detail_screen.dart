@@ -299,51 +299,56 @@ class _CatchInfoGrid extends StatelessWidget {
     final dateStr =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+    // Built as rows (not side-by-side columns) so a wrapping value — like a
+    // long location — can't push its neighbors out of alignment.
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _InfoCell(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _InfoCell(
                   label: 'Catches',
                   value: '${card.catchCount}',
                   theme: theme,
                   centered: true,
                 ),
-                const SizedBox(height: 12),
-                _InfoCell(
+              ),
+              Expanded(
+                child: _InfoCell(
+                  label: 'Level',
+                  value: '${card.level}',
+                  theme: theme,
+                  centered: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _InfoCell(
                   label: 'First seen',
                   value: dateStr,
                   theme: theme,
                   small: true,
                   centered: true,
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _InfoCell(
-                  label: 'Level',
-                  value: '${card.level}',
-                  theme: theme,
-                  centered: true,
-                ),
-                const SizedBox(height: 12),
-                _InfoCell(
+              ),
+              Expanded(
+                child: _InfoCell(
                   label: 'Location',
                   value: card.firstCatchLocation,
                   theme: theme,
                   small: true,
                   centered: true,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
