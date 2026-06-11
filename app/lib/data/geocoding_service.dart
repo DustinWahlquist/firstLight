@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import '../core/config.dart';
 
 class PlaceSuggestion {
   const PlaceSuggestion({
@@ -24,6 +25,11 @@ class GeocodingService {
     final client = HttpClient();
     try {
       final request = await client.getUrl(uri);
+      // Photon's CDN rejects Dart's default user agent with a 403.
+      request.headers.set(
+        HttpHeaders.userAgentHeader,
+        'FirstLight/1.0 ($osmUserAgentPackageName)',
+      );
       final response = await request.close();
       if (response.statusCode != 200) return [];
       final body = await response.transform(utf8.decoder).join();
