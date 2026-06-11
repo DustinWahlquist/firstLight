@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../data/geocoding_service.dart';
@@ -353,7 +354,11 @@ class AviaryScreen extends ConsumerWidget {
           context.push('/card-reveal', extra: card);
         case LogCatchXpAwarded(leveledUp: true, :final before, :final after):
           context.push('/level-up', extra: (oldCard: before, newCard: after));
-        case LogCatchXpAwarded():
+        case LogCatchXpAwarded(:final before, :final after):
+          await showDialog<void>(
+            context: context,
+            builder: (_) => _XpGainedDialog(before: before, after: after),
+          );
         case LogCatchDuplicate():
         case LogCatchFutureDated():
           break;
@@ -536,6 +541,80 @@ class _LocationDialogState extends State<_LocationDialog> {
         FilledButton(
           onPressed: _saveTyped,
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Celebrates a repeat catch: the bird's XP bar animates from where it
+/// was to where it is now.
+class _XpGainedDialog extends StatelessWidget {
+  const _XpGainedDialog({required this.before, required this.after});
+
+  final BirdCard before;
+  final BirdCard after;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final threshold = GameRules.xpForNextLevel(after.level);
+    final gained = after.xp - before.xp;
+
+    return AlertDialog(
+      title: Text(after.speciesName, textAlign: TextAlign.center),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 96,
+            child: after.lineArtUrl != null
+                ? SvgPicture.network(after.lineArtUrl!, fit: BoxFit.contain)
+                : Icon(
+                    Icons.flutter_dash,
+                    size: 64,
+                    color: theme.colorScheme.primary,
+                  ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '+$gained XP',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin: (before.xp / threshold).clamp(0.0, 1.0),
+              end: (after.xp / threshold).clamp(0.0, 1.0),
+            ),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 10,
+                backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Lv ${after.level} · ${after.xp} / $threshold XP',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Nice!'),
         ),
       ],
     );
