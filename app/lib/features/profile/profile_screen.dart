@@ -159,8 +159,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(child: _StatCell(label: 'Lifers', value: '$lifers')),
-                        Expanded(child: _StatCell(label: 'Total catches', value: '$totalCatches')),
-                        Expanded(child: _StatCell(label: 'Total XP', value: '$totalXp')),
+                        Expanded(child: _StatCell(label: 'Catches', value: '$totalCatches')),
+                        Expanded(child: _StatCell(label: 'XP', value: '$totalXp')),
                         Expanded(
                           child: GestureDetector(
                             onTap: () => context.push('/friends'),

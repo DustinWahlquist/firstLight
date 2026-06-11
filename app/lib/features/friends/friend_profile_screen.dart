@@ -147,7 +147,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                           children: [
                             Expanded(child: _StatCell(label: 'Lifers', value: '${_aviary?.length ?? 0}')),
                             Expanded(child: _StatCell(
-                              label: 'Total catches',
+                              label: 'Catches',
                               value: '${_aviary?.fold(0, (s, c) => s + c.catchCount) ?? 0}',
                             )),
                             Expanded(child: _StatCell(
