@@ -1,3 +1,7 @@
+// Dev tool: sanity-check Photon geocoding from the command line.
+// Run with: dart run tool/geocheck.dart
+// ignore_for_file: avoid_print
+
 import 'package:first_light/data/geocoding_service.dart';
 
 Future<void> main() async {
