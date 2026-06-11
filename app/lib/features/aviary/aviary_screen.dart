@@ -189,8 +189,7 @@ class AviaryScreen extends ConsumerWidget {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
-    return 'Already logged this bird on ${months[date.month - 1]} ${date.day}. '
-        'One catch per bird per day.';
+    return 'Already logged this bird on ${months[date.month - 1]} ${date.day}.';
   }
 
   void _showSortMenu(BuildContext context, WidgetRef ref) {
