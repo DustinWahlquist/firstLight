@@ -15,10 +15,11 @@ import 'log_catch_controller.dart';
 import 'screenshot_picker.dart';
 import 'widgets/bird_card_tile.dart';
 
-enum _SortOrder { dateAdded, lastCatch, level, alphabetical }
+// Declaration order is the sort menu's display order.
+enum _SortOrder { alphabetical, level, lastCatch, dateAdded }
 
-final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.dateAdded);
-final _sortAscendingProvider = StateProvider<bool>((_) => false);
+final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.alphabetical);
+final _sortAscendingProvider = StateProvider<bool>((_) => true);
 
 class AviaryScreen extends ConsumerWidget {
   const AviaryScreen({super.key});
