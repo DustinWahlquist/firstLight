@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -272,6 +273,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('Sign in with password'),
                 ),
               ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'New to First Light?',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/signup'),
+                    child: const Text('Create account'),
+                  ),
+                ],
+              ),
               if (kDebugMode) ...[
                 const SizedBox(height: 8),
                 TextButton(

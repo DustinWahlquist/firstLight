@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/reset_password_screen.dart';
+import '../../features/auth/signup_screen.dart';
 import '../../features/aviary/aviary_screen.dart';
 import '../../features/aviary/bird_detail_screen.dart';
 import '../../features/card_reveal/card_reveal_screen.dart';
@@ -51,17 +52,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
       final loc = state.matchedLocation;
       final isOnLogin = loc == '/login';
+      final isOnSignup = loc == '/signup';
       final isOnReset = loc == '/reset-password';
 
-      if (!isLoggedIn && !isOnLogin) return '/login';
+      if (!isLoggedIn && !isOnLogin && !isOnSignup) return '/login';
       if (isLoggedIn && notifier.isPasswordRecovery && !isOnReset) return '/reset-password';
-      if (isLoggedIn && isOnLogin) return '/feed';
+      if (isLoggedIn && (isOnLogin || isOnSignup)) return '/feed';
       return null;
     },
     routes: [
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignUpScreen(),
       ),
       GoRoute(
         path: '/reset-password',
