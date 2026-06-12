@@ -166,10 +166,10 @@ The Roost is an **Endurance Track** — five slots labeled Endurance 5 down to E
 
 High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
 
-### 6.6 Physical Cards
+### 6.6 Physical Cards (future add — not in initial scope)
 
 - **Print-at-home:** App exports printable card sheets with current stats
-- **Professionally printed:** Future physical product / merchandise integration
+- **Professionally printed:** Physical product / merchandise integration
 - Handwritten stats fields on the printed card template (for use in physical-only play without app access)
 
 ---
@@ -234,7 +234,7 @@ The physical board translates directly to the app, with the bookkeeping automate
 
 - **Async play** maps to the alternating-activation structure: each single-bird activation hands the turn to the opponent, and Night resolves automatically once both pass. Because one game day can involve several back-and-forths, async matches should support notification batching and an optional "auto-pass the rest of the day" commitment to keep the pace pleasant.
 - **Spectating/replay** falls out of server-held match state.
-- The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) doubles as the print-at-home layout for matless play.
+- The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) will double as the print-at-home layout for matless play, when physical cards ship (future add).
 
 ---
 
@@ -362,6 +362,7 @@ The physical board translates directly to the app, with the bookkeeping automate
 - PvE / story campaign
 - Guild / flock-team multiplayer (3+ players)
 - Real-money card trading marketplace
+- Print-at-home and professionally printed physical cards
 - Integration with eBird or other birding platforms (post-Merlin)
 - AR card reveal / battle overlay
 - Animated card art
