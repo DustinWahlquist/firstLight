@@ -80,7 +80,7 @@ In order:
 
 1. **Track shift:** every bird slides one slot left on the Endurance Track and untaps; birds sliding off slot 1 go to the discard pile.
 2. **Draw:** each Watcher draws **2 cards** from their Flock deck. **Maximum hand size is 7** — no forced discard; draws that would exceed the cap are forfeited (at 7 you draw nothing, at 6 you draw one).
-3. **Deploy:** each Watcher may place up to **3 birds** onto the Endurance Track, each in the slot matching its Endurance stat. They're active from the next First Light.
+3. **Deploy:** each Watcher may place up to **3 birds** onto the Endurance Track, each in the slot matching its Endurance stat. Deployment is always **free** — the only limit is the 3-per-night cap. Deployed birds are active from the next First Light.
 
 Turn order during Night carries over from First Light.
 
@@ -165,7 +165,7 @@ The physical-board concepts above (tap = sideways, five-column mat, dice odomete
 | 2 | Which cards or abilities allow retrieval from the discard pile? — deferred until species moves are designed (moves layer) | Deferred |
 | 3 | ~~Max birds per Endurance Track slot?~~ Resolved: unlimited stacking. | — |
 | 4 | Can Support effects restore endurance by sliding a bird right on the track? Likely yes — deferred until species moves are designed (moves layer) | Deferred |
-| 5 | Does deploying cost anything, or is Night deployment always free? | Medium |
+| 5 | ~~Does deploying cost anything?~~ Resolved: Night deployment is always free, limited only by the 3-per-night cap. | — |
 | 6 | What does a deck running out of cards mean — is decking out a loss, or do you race on with what's left? | Medium |
 
 Resolved: flock migration distance is the **sum of fly activations** — each flying bird banks its own speed.
