@@ -350,7 +350,7 @@ The physical board translates directly to the app, with the bookkeeping automate
 | # | Question | Priority |
 |---|---|---|
 | 1 | Which cards or abilities allow retrieval from the discard pile? | High |
-| 2 | How does Flock migration distance combine across active birds — sum of speeds, slowest bird, or lead bird only? | High |
+| 2 | ~~How does Flock migration distance combine across active birds?~~ Resolved: it's the sum of fly activations — each bird that flies banks its own speed. | — |
 | 3 | Is there a max number of birds per Endurance Track slot, or unlimited stacking? | Medium |
 | 4 | Can Support effects (e.g. Drafting) restore endurance by sliding a bird right on the track? | Medium |
 | 5 | Does deploying mid-match cost anything, or is Night deployment always free? | Medium |
