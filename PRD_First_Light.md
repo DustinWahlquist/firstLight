@@ -266,7 +266,7 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 
 ---
 
-## 10. Trading
+## 10. Trading (future)
 
 - **In-person only, always.** Cards can only be traded peer-to-peer via proximity/QR code. Online trading will never be available.
 - **Trade consequences:**
