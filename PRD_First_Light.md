@@ -72,8 +72,8 @@ Each match is divided into rounds. Each round has two phases: **First Light** (d
 
 First Light is the active movement and combat phase.
 
-- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats and any Support boosts. Every bird in the Roost drains 1 Endurance per round simply from flying.
-- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Taking an offensive action drains 1 Endurance from the acting bird.
+- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer.
+- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day), and an offensive action costs one extra slot at the nightly Endurance Track shift (see 6.5).
 - Turn order is determined by the Initiative roll (see 5.3).
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
@@ -82,8 +82,9 @@ First Light is the active movement and combat phase.
 
 Night is the recovery and setup phase.
 
-- **Draw:** Watchers draw cards from their personal Flock deck.
-- **Deploy:** Place birds onto the Roost to be active in the next First Light.
+- **Track shift:** every bird slides one slot left on the Endurance Track (attackers slide two) and untaps; birds sliding off slot 1 go to the discard pile.
+- **Draw:** Watchers draw cards from their personal Flock deck (the pick pile at the right end of the board).
+- **Deploy:** Place birds onto the Endurance Track slot matching their Endurance stat, active from the next First Light.
 - Turn order during Night carries over from First Light.
 
 ### 5.3 Initiative
@@ -149,13 +150,18 @@ Each card displays:
 - **Rarity indicator**
 - Player's personal catch count for that species
 
-### 6.5 Bird Lifecycle (In-Match)
+### 6.5 Bird Lifecycle (In-Match): The Endurance Track
 
-Once deployed to the Roost, a bird remains active until its Endurance is fully depleted — then it moves to the discard pile and is out of the match.
+The Roost is an **Endurance Track** — five slots labeled Endurance 5 down to Endurance 1, with the draw pile at the right end and the discard pile at the left end. A bird's position on the track *is* its remaining endurance; no counters or damage markers are needed.
 
-**Hand → Roost → Discard**
+**Hand → track slot matching the bird's Endurance → slides left nightly → off the track → Discard**
 
-Every bird in the Roost drains 1 Endurance per round from flying. Taking an offensive action drains an additional 1 Endurance. A bird that attacks in a round loses 2 Endurance total. High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
+- **Deploy (Night):** a bird enters the track at the slot matching its Endurance stat (an Endurance 3 bird is placed in slot 3).
+- **Act (First Light):** using a bird — attacking, moving, supporting — **taps** it (turn the card sideways). A tapped bird can't act again that day.
+- **Nightly shift:** when Night comes, every bird slides **one slot left** (the day's flying) and untaps. Taking an offensive action that day costs one **additional** slot at the shift — an attacker slides two.
+- **Exhaustion:** a bird that slides off Endurance 1 leaves the board and goes to the discard pile.
+
+High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
 
 ### 6.6 Physical Cards
 
@@ -188,10 +194,11 @@ Every bird in the Roost drains 1 Endurance per round from flying. Taking an offe
 
 ### 8.1 Core Win Condition
 
-The game board represents a **bird migration path**. The goal is to **migrate your flock a total of 5,000 kilometers** before your opponent does.
+The game board represents a **bird migration path**. The goal is to **migrate your flock a total of 10,000 kilometers** before your opponent does.
 
 - **1 round = 1 in-game day (First Light phase + Night phase)**
-- **Migration Speed** is the primary stat determining how far your flock moves each round
+- **Migration Speed** is the primary stat determining how far your flock moves each round — a bird flies **Migration Speed × 100 km per day** (100–1,000 km)
+- **Physical tracking:** each player keeps a four-digit km odometer with four D10 dice (thousands / hundreds / tens / ones)
 - Modifiers:
   - **Drafting birds** (Support type) → boost migration speed
   - **Endurance** stat → limits how many days a bird can stay active; depleted birds move to discard
@@ -205,7 +212,26 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 - Reach a specific elevation (vertical migration variant)
 - Travel the furthest cumulative distance across a season
 
-> Recommendation: Use migration distance (10k km) as the default win condition, with variant formats for tournaments.
+> 10,000 km migration is the default win condition; the alternatives above are variant formats to explore for tournaments.
+
+### 8.3 Digital Roost: board → app mapping
+
+The physical board translates directly to the app, with the bookkeeping automated:
+
+| Physical | Digital |
+|---|---|
+| Five Endurance Track slots on the mat | Roost screen renders the track as five columns; cards sit in their slot |
+| Place a deployed bird in the slot matching its Endurance | Drag from hand; the app enforces the correct slot |
+| Tap (turn sideways) to act | Literally tap the card; tapped state shown by rotating it |
+| Nightly shift: slide every bird one slot left, untap | Cards animate one column left at Night automatically; extra slide applied to attackers |
+| Slide off slot 1 → discard pile | Automatic, with a fly-away animation |
+| Four D10 dice as a km odometer | Running km totals for both players, always visible; progress bar to 10,000 km |
+| Initiative die roll each morning | Server-side roll, animated |
+| Players police legality (slot placement, tap rules, drains) | The server is the rules authority — the client can only submit legal moves, mirroring how catch logging already works |
+
+- **Async play** maps cleanly: your First Light actions are your turn; Night resolves automatically once both players have acted, then the next day begins.
+- **Spectating/replay** falls out of server-held match state.
+- The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) doubles as the print-at-home layout for matless play.
 
 ---
 
@@ -321,6 +347,10 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 | # | Question | Priority |
 |---|---|---|
 | 1 | Which cards or abilities allow retrieval from the discard pile? | High |
+| 2 | How does Flock migration distance combine across active birds — sum of speeds, slowest bird, or lead bird only? | High |
+| 3 | Is there a max number of birds per Endurance Track slot, or unlimited stacking? | Medium |
+| 4 | Can Support effects (e.g. Drafting) restore endurance by sliding a bird right on the track? | Medium |
+| 5 | Does deploying mid-match cost anything, or is Night deployment always free? | Medium |
 
 ---
 
