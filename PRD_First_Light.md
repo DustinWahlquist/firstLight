@@ -223,7 +223,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 
 ### 8.3 Digital Roost: board → app mapping
 
-The physical board translates directly to the app, with the bookkeeping automated:
+This table maps **rules, not looks**. The physical five-column mat is a state-tracking device for tabletops; the digital version is free to move far from that layout and present endurance, hands, and migration however works best on a phone — as long as the underlying rules and game state stay identical, so digital and (future) physical players are learning the same game.
 
 | Physical | Digital |
 |---|---|
