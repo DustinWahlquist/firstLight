@@ -149,9 +149,9 @@ Each card displays:
 - **Level** and **XP bar**
 - **Stats:** Migration Speed, Endurance, Attack Power, Defense
 - **Moves** (up to max, unlocked progressively by level): categorized as Offense, Defense, or Support
-- **Bird facts** (rotating educational trivia)
-- **Rarity indicator**
 - Player's personal catch count for that species
+
+Bird facts and trivia live on the bird detail screen in the collection, not on the gameplay card — the card carries only what a match needs.
 
 ### 6.5 Bird Lifecycle (In-Match): The Endurance Track
 
