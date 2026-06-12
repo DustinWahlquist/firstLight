@@ -236,6 +236,7 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 | Initiative die roll each morning | Server-side roll, animated |
 | Players police legality (slot placement, tap rules, drains) | The server is the rules authority — the client can only submit legal moves, mirroring how catch logging already works |
 
+- **Portrait-first:** matches are designed for vertical, one-handed phone play — landscape is never required. (A wide board is a tabletop habit; on a phone the match should read top-to-bottom, with the iPad free to use its larger canvas per section 13.3.)
 - **Async play** maps to the alternating-activation structure: each single-bird activation hands the turn to the opponent, and Night resolves automatically once both pass. Because one game day can involve several back-and-forths, async matches should support notification batching and an optional "auto-pass the rest of the day" commitment to keep the pace pleasant.
 - **Spectating/replay** falls out of server-held match state.
 - The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) will double as the print-at-home layout for matless play, when physical cards ship (future add).
