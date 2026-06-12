@@ -249,7 +249,7 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 
 - **Live (synchronous):** Real-time 1v1 matches with turn timers
 - **Asynchronous:** Take-your-turn matches; notifications when it's your move
-- **Matchmaking:** Skill-based rating system; considers Flock strength and player win/loss record
+- **Matchmaking (future):** skill-based rating system; considers Flock strength and player win/loss record — V1 matches are with friends (invites), no ranked queue
 - **Leaderboards:** Global and friends-based ranking
 
 ### 9.2 In-Person / Physical
