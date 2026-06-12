@@ -203,6 +203,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
 
 - **1 round = 1 in-game day (First Light phase + Night phase)**
 - **Migration Speed** is the primary stat determining how far your flock moves each round — a bird flies **Migration Speed × 100 km per day** (100–1,000 km)
+  - *Future:* the 1–10 banding is a starting simplification — eventually species should carry more specific migration speeds (closer to true km/day figures, e.g. 340 km rather than a flat 300) for more flavor and finer balance tuning
 - **Physical tracking:** each player keeps a four-digit km odometer with four D10 dice (thousands / hundreds / tens / ones)
 - Modifiers:
   - **Drafting birds** (Support type) → boost migration speed
