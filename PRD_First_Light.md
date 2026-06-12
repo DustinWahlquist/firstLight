@@ -77,6 +77,8 @@ First Light is the active movement and combat phase.
 - **Activating a bird taps it** (turned sideways) and is a choice between two ways to spend its day:
   - **Fly** — bank the bird's Migration Speed (×100 km, plus any Support boosts) on your km odometer.
   - **Use a move** — attack the opposing Flock (fatigue, disruption, culling) or play a Defense/Support effect. Fighting replaces flying: a bird that uses a move banks **no distance** that day.
+
+> **Gameplay V1 scope:** birds carry only **Migration Speed** and **Endurance** — moves don't exist yet in the CMS or on cards, so the first playable version is the pure migration race: deploy, fly, manage the Endurance Track and hand. The fly-or-move choice (and everything in section 7) layers on once species moves are authored.
 - **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. If one Watcher runs out of untapped birds, the other continues activating one at a time. **The day goes on until no one has any cards left to play in their Roost** — every bird activates every day, to fly or to fight.
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
@@ -147,7 +149,7 @@ Each card displays:
 - Bird name + species classification
 - High-quality illustration (sourced from Merlin / Cornell Lab assets where licensed)
 - **Level** and **XP bar**
-- **Stats:** Migration Speed, Endurance, Attack Power, Defense
+- **Stats:** Migration Speed and Endurance (Attack Power and Defense may join when the moves system lands)
 - **Moves** (up to max, unlocked progressively by level): categorized as Offense, Defense, or Support
 - Player's personal catch count for that species
 
@@ -174,7 +176,7 @@ High-speed or high-power birds typically have low Endurance (1–2), making Floc
 
 ---
 
-## 7. Moves System
+## 7. Moves System (second gameplay layer — after the migration race is playable)
 
 ### 7.1 Move Categories
 
