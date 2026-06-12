@@ -19,8 +19,9 @@ import 'widgets/bird_card_tile.dart';
 // Declaration order is the sort menu's display order.
 enum _SortOrder { alphabetical, level, lastCatch, dateAdded }
 
-final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.alphabetical);
-final _sortAscendingProvider = StateProvider<bool>((_) => true);
+// Default: highest-level birds first.
+final _sortOrderProvider = StateProvider<_SortOrder>((_) => _SortOrder.level);
+final _sortAscendingProvider = StateProvider<bool>((_) => false);
 
 class AviaryScreen extends ConsumerWidget {
   const AviaryScreen({super.key});
