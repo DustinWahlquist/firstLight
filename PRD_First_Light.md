@@ -66,48 +66,7 @@ Earn rewards, level up birds, climb leaderboards
 
 ## 5. Turn Structure
 
-Each match is divided into rounds. Each round has two phases: **First Light** (day) and **Night**.
-
-**Setup:** each Watcher draws an opening hand of **5 cards** from their Flock deck.
-
-### 5.1 First Light (Day Phase)
-
-First Light is the active movement and combat phase.
-
-- **Activating a bird taps it** (turned sideways) and is a choice between two ways to spend its day:
-  - **Fly** — bank the bird's Migration Speed (×100 km, plus any Support boosts) on your km odometer.
-  - **Use a move** — attack the opposing Flock (fatigue, disruption, culling) or play a Defense/Support effect. Fighting replaces flying: a bird that uses a move banks **no distance** that day.
-
-> **Gameplay V1 scope:** birds carry only **Migration Speed** and **Endurance** — moves don't exist yet in the CMS or on cards, so the first playable version is the pure migration race: deploy, fly, manage the Endurance Track and hand. The fly-or-move choice (and everything in section 7) layers on once species moves are authored.
-- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. If one Watcher runs out of untapped birds, the other continues activating one at a time. **The day goes on until no one has any cards left to play in their Roost** — every bird activates every day, to fly or to fight.
-
-> If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
-
-### 5.2 Night Phase
-
-Night is the recovery and setup phase.
-
-- **Track shift:** every bird slides one slot left on the Endurance Track and untaps; birds sliding off slot 1 go to the discard pile.
-- **Draw:** Watchers draw **2 cards** from their personal Flock deck (the pick pile at the right end of the board). **Maximum hand size is 7** — there is no forced discard; draws that would exceed the cap are simply forfeited (a Watcher at 7 draws nothing, at 6 draws one) until deploying frees up room.
-- **Deploy:** Place up to **3 birds** onto the Endurance Track, each in the slot matching its Endurance stat, active from the next First Light.
-- Turn order during Night carries over from First Light.
-
-### 5.3 Initiative
-
-At the start of each First Light, Watchers roll to determine turn order.
-
-- Each Watcher rolls a die and applies their **Initiative modifier** (derived from individual bird skills).
-- A flat penalty is applied based on active Flock size:
-
-| Flock Size | Bird Count | Initiative Penalty |
-|---|---|---|
-| Small | 1–2 | 0 |
-| Medium | 3–4 | −1 |
-| Large | 5–6 | −2 |
-| Extra Large | 7–8+ | −3 |
-
-- **Exempt birds:** Birds with traits like *Silent Riser* do not count toward the Flock Size threshold — they join the Flock without slowing morning coordination.
-- Highest roll acts first. Tiebreaker goes to the Watcher with the fewest birds in their Roost.
+The complete match design — round structure, initiative, alternating activations, and the hand economy — lives in **[PRD_First_Light_Gameplay.md](PRD_First_Light_Gameplay.md)**, the authoritative gameplay spec.
 
 ---
 
@@ -155,18 +114,9 @@ Each card displays:
 
 Bird facts and trivia live on the bird detail screen in the collection, not on the gameplay card — the card carries only what a match needs.
 
-### 6.5 Bird Lifecycle (In-Match): The Endurance Track
+### 6.5 Bird Lifecycle (In-Match)
 
-The Roost is an **Endurance Track** — five slots labeled Endurance 5 down to Endurance 1, with the draw pile at the right end and the discard pile at the left end. A bird's position on the track *is* its remaining endurance; no counters or damage markers are needed.
-
-**Hand → track slot matching the bird's Endurance → slides left nightly → off the track → Discard**
-
-- **Deploy (Night):** a bird enters the track at the slot matching its Endurance stat (an Endurance 3 bird is placed in slot 3).
-- **Act (First Light):** activating a bird — to fly or to use a move — **taps** it (turn the card sideways). A tapped bird is done for the day, and a bird that used a move banked no distance — fighting replaces flying.
-- **Nightly shift:** when Night comes, every bird slides **one slot left** (the day's toll) and untaps.
-- **Exhaustion:** a bird that slides off Endurance 1 leaves the board and goes to the discard pile.
-
-High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
+The Endurance Track — how birds live and die during a match — is specified in the gameplay spec.
 
 ### 6.6 Physical Cards (future add — not in initial scope)
 
@@ -176,95 +126,21 @@ High-speed or high-power birds typically have low Endurance (1–2), making Floc
 
 ---
 
-## 7. Moves System (second gameplay layer — after the migration race is playable)
+## 7. Moves System
 
-### 7.1 Move Categories
-
-| Category | Description |
-|---|---|
-| **Offense** | Deal damage or reduce opponent's migration progress |
-| **Defense** | Block, redirect, or absorb incoming attacks |
-| **Support** | Boost allies' speed, endurance, or draw power (e.g., "Drafting" birds boost migration speed; "Attracting" birds pull in more cards) |
-
-### 7.2 Move Slots
-
-- Each bird card can hold up to **3 moves**.
-- New moves unlock at level milestones.
-- Players choose which moves to keep when a new one is unlocked, creating strategic decisions.
-- Move quality is tied to **bird classification** (e.g., raptors skew offense, shorebirds skew support, songbirds could be support/utility).
+Moved to the gameplay spec (second gameplay layer, arriving after the migration race is playable).
 
 ---
 
 ## 8. Win Condition: The Migration
 
-### 8.1 Core Win Condition
-
-The game board represents a **bird migration path**. The goal is to **migrate your flock a total of 10,000 kilometers** before your opponent does.
-
-- **1 round = 1 in-game day (First Light phase + Night phase)**
-- **Migration Speed** is the primary stat determining how far your flock moves each round — a bird flies **Migration Speed × 100 km per day** (100–1,000 km)
-  - *Future:* the 1–10 banding is a starting simplification — eventually species should carry more specific migration speeds (closer to true km/day figures, e.g. 340 km rather than a flat 300) for more flavor and finer balance tuning
-- **Digital tracking (current focus):** the app keeps each Watcher's running km total and progress toward 10,000 km always visible — no manual bookkeeping
-- **Physical tracking (future, alongside physical play):** each player keeps a four-digit km odometer with four D10 dice (thousands / hundreds / tens / ones)
-- Modifiers:
-  - **Drafting birds** (Support type) → boost migration speed
-  - **Endurance** stat → limits how many days a bird can stay active; depleted birds move to discard
-  - **Attracting birds** → pull in additional card/resource advantages
-  - **Support power** → enables overnight travel (move during opponent's turn)
-
-### 8.2 Alternative / Secondary Win Conditions (future — V1 ships with the 10,000 km race only)
-
-- Reduce opponent's points to 0
-- Place X number of birds in contested territories on the board
-- Reach a specific elevation (vertical migration variant)
-- Travel the furthest cumulative distance across a season
-
-> 10,000 km migration is the default win condition; the alternatives above are variant formats to explore for tournaments.
-
-### 8.3 Digital Roost: board → app mapping
-
-This table maps **rules, not looks**. The physical five-column mat is a state-tracking device for tabletops; the digital version is free to move far from that layout and present endurance, hands, and migration however works best on a phone — as long as the underlying rules and game state stay identical, so digital and (future) physical players are learning the same game.
-
-| Physical | Digital |
-|---|---|
-| Five Endurance Track slots on the mat | Roost screen renders the track as five columns; cards sit in their slot |
-| Place a deployed bird in the slot matching its Endurance | Drag from hand; the app enforces the correct slot |
-| Tap (turn sideways) to act | Literally tap the card; tapped state shown by rotating it |
-| Nightly shift: slide every bird one slot left, untap | Cards animate one column left at Night automatically |
-| Slide off slot 1 → discard pile | Automatic, with a fly-away animation |
-| Four D10 dice as a km odometer | Running km totals for both players, always visible; progress bar to 10,000 km — attackers' forfeited distance excluded automatically |
-| Initiative die roll each morning | Server-side roll, animated |
-| Players police legality (slot placement, tap rules, drains) | The server is the rules authority — the client can only submit legal moves, mirroring how catch logging already works |
-
-- **Portrait-first:** matches are designed for vertical, one-handed phone play — landscape is never required. (A wide board is a tabletop habit; on a phone the match should read top-to-bottom, with the iPad free to use its larger canvas per section 13.3.)
-- **Async play** maps to the alternating-activation structure: each single-bird activation hands the turn to the opponent, and Night resolves automatically once both pass. Because one game day can involve several back-and-forths, async matches should support notification batching and an optional "auto-pass the rest of the day" commitment to keep the pace pleasant.
-- **Spectating/replay** falls out of server-held match state.
-- The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) will double as the print-at-home layout for matless play, when physical cards ship (future add).
+The 10,000 km race, km tracking, and the digital presentation principles are specified in the gameplay spec.
 
 ---
 
 ## 9. Gameplay Formats
 
-### 9.1 Online
-
-**Build order: hotseat (dev milestone) → asynchronous (V1) → live (future).**
-
-- **Asynchronous (V1):** take-your-turn matches with friends via invites; notifications when it's your move. Match state lives server-side and every action is validated there (same authority model as catch logging). Clients subscribe to match updates, so when both players happen to be online, async play feels real-time for free.
-- **Live (future):** a dedicated real-time mode — turn timers, presence, disconnect handling — built as a layer on the async engine, not a separate system.
-- **Matchmaking (future):** skill-based rating system; considers Flock strength and player win/loss record — V1 matches are with friends (invites), no ranked queue
-- **Leaderboards:** Global and friends-based ranking
-
-### 9.2 In-Person / Physical (future — alongside physical cards)
-
-- Players use the app to display their active Flock during play (Merlin bird data required for move verification)
-- Physical printed cards can be used; app serves as the rulebook and stat tracker
-- **Competitive physical play:** A way to normalize deck power levels for friendly play (e.g., handicap system or power-capped formats)
-
-### 9.3 Tournaments (future)
-
-- In-person and virtual tournament brackets
-- Tournament format may restrict Flock building (e.g., power caps, regional bird restrictions)
-- Prizes: in-app cosmetics, physical card packs, or XP boosts
+Formats and the build order (hotseat → asynchronous V1 → live later) are specified in the gameplay spec.
 
 ---
 
@@ -354,13 +230,7 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 
 ## 15. Open Questions / To Be Decided
 
-| # | Question | Priority |
-|---|---|---|
-| 1 | Which cards or abilities allow retrieval from the discard pile? | High |
-| 2 | ~~How does Flock migration distance combine across active birds?~~ Resolved: it's the sum of fly activations — each bird that flies banks its own speed. | — |
-| 3 | Is there a max number of birds per Endurance Track slot, or unlimited stacking? | Medium |
-| 4 | Can Support effects (e.g. Drafting) restore endurance by sliding a bird right on the track? | Medium |
-| 5 | Does deploying mid-match cost anything, or is Night deployment always free? | Medium |
+Gameplay design questions moved to the gameplay spec.
 
 ---
 
