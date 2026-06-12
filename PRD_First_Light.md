@@ -212,7 +212,7 @@ The game board represents a **bird migration path**. The goal is to **migrate yo
   - **Attracting birds** → pull in additional card/resource advantages
   - **Support power** → enables overnight travel (move during opponent's turn)
 
-### 8.2 Alternative / Secondary Win Conditions (To Explore)
+### 8.2 Alternative / Secondary Win Conditions (future — V1 ships with the 10,000 km race only)
 
 - Reduce opponent's points to 0
 - Place X number of birds in contested territories on the board
