@@ -85,7 +85,7 @@ First Light is the active movement and combat phase.
 Night is the recovery and setup phase.
 
 - **Track shift:** every bird slides one slot left on the Endurance Track and untaps; birds sliding off slot 1 go to the discard pile.
-- **Draw:** Watchers draw **2 cards** from their personal Flock deck (the pick pile at the right end of the board).
+- **Draw:** Watchers draw **2 cards** from their personal Flock deck (the pick pile at the right end of the board). **Maximum hand size is 7** — there is no forced discard; draws that would exceed the cap are simply forfeited (a Watcher at 7 draws nothing, at 6 draws one) until deploying frees up room.
 - **Deploy:** Place up to **3 birds** onto the Endurance Track, each in the slot matching its Endurance stat, active from the next First Light.
 - Turn order during Night carries over from First Light.
 
