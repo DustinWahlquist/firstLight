@@ -68,6 +68,8 @@ Earn rewards, level up birds, climb leaderboards
 
 Each match is divided into rounds. Each round has two phases: **First Light** (day) and **Night**.
 
+**Setup:** each Watcher draws an opening hand of **5 cards** from their Flock deck.
+
 ### 5.1 First Light (Day Phase)
 
 First Light is the active movement and combat phase.
@@ -82,9 +84,9 @@ First Light is the active movement and combat phase.
 
 Night is the recovery and setup phase.
 
-- **Track shift:** every bird slides one slot left on the Endurance Track (attackers slide two) and untaps; birds sliding off slot 1 go to the discard pile.
-- **Draw:** Watchers draw cards from their personal Flock deck (the pick pile at the right end of the board).
-- **Deploy:** Place birds onto the Endurance Track slot matching their Endurance stat, active from the next First Light.
+- **Track shift:** every bird slides one slot left on the Endurance Track and untaps; birds sliding off slot 1 go to the discard pile.
+- **Draw:** Watchers draw **2 cards** from their personal Flock deck (the pick pile at the right end of the board).
+- **Deploy:** Place up to **3 birds** onto the Endurance Track, each in the slot matching its Endurance stat, active from the next First Light.
 - Turn order during Night carries over from First Light.
 
 ### 5.3 Initiative
