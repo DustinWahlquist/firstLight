@@ -72,8 +72,8 @@ Each match is divided into rounds. Each round has two phases: **First Light** (d
 
 First Light is the active movement and combat phase.
 
-- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer.
-- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day), and an offensive action costs one extra slot at the nightly Endurance Track shift (see 6.5).
+- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer. A bird that attacks contributes **no distance** that day.
+- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day). The cost of attacking is the day's flight: the bird fights *instead of* flying, forfeiting its Migration Speed for that day.
 - Turn order is determined by the Initiative roll (see 5.3).
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
@@ -157,8 +157,8 @@ The Roost is an **Endurance Track** — five slots labeled Endurance 5 down to E
 **Hand → track slot matching the bird's Endurance → slides left nightly → off the track → Discard**
 
 - **Deploy (Night):** a bird enters the track at the slot matching its Endurance stat (an Endurance 3 bird is placed in slot 3).
-- **Act (First Light):** using a bird — attacking, moving, supporting — **taps** it (turn the card sideways). A tapped bird can't act again that day.
-- **Nightly shift:** when Night comes, every bird slides **one slot left** (the day's flying) and untaps. Taking an offensive action that day costs one **additional** slot at the shift — an attacker slides two.
+- **Act (First Light):** using a bird — attacking, moving, supporting — **taps** it (turn the card sideways). A tapped bird can't act again that day, and an attacker forfeits its Migration Speed contribution for the day — fighting replaces flying.
+- **Nightly shift:** when Night comes, every bird slides **one slot left** (the day's toll) and untaps.
 - **Exhaustion:** a bird that slides off Endurance 1 leaves the board and goes to the discard pile.
 
 High-speed or high-power birds typically have low Endurance (1–2), making Flock stamina a key strategic consideration alongside raw power.
@@ -223,9 +223,9 @@ The physical board translates directly to the app, with the bookkeeping automate
 | Five Endurance Track slots on the mat | Roost screen renders the track as five columns; cards sit in their slot |
 | Place a deployed bird in the slot matching its Endurance | Drag from hand; the app enforces the correct slot |
 | Tap (turn sideways) to act | Literally tap the card; tapped state shown by rotating it |
-| Nightly shift: slide every bird one slot left, untap | Cards animate one column left at Night automatically; extra slide applied to attackers |
+| Nightly shift: slide every bird one slot left, untap | Cards animate one column left at Night automatically |
 | Slide off slot 1 → discard pile | Automatic, with a fly-away animation |
-| Four D10 dice as a km odometer | Running km totals for both players, always visible; progress bar to 10,000 km |
+| Four D10 dice as a km odometer | Running km totals for both players, always visible; progress bar to 10,000 km — attackers' forfeited distance excluded automatically |
 | Initiative die roll each morning | Server-side roll, animated |
 | Players police legality (slot placement, tap rules, drains) | The server is the rules authority — the client can only submit legal moves, mirroring how catch logging already works |
 
