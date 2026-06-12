@@ -252,13 +252,13 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 - **Matchmaking (future):** skill-based rating system; considers Flock strength and player win/loss record — V1 matches are with friends (invites), no ranked queue
 - **Leaderboards:** Global and friends-based ranking
 
-### 9.2 In-Person / Physical
+### 9.2 In-Person / Physical (future — alongside physical cards)
 
 - Players use the app to display their active Flock during play (Merlin bird data required for move verification)
 - Physical printed cards can be used; app serves as the rulebook and stat tracker
 - **Competitive physical play:** A way to normalize deck power levels for friendly play (e.g., handicap system or power-capped formats)
 
-### 9.3 Tournaments
+### 9.3 Tournaments (future)
 
 - In-person and virtual tournament brackets
 - Tournament format may restrict Flock building (e.g., power caps, regional bird restrictions)
