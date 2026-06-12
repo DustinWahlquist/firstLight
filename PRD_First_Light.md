@@ -76,7 +76,7 @@ First Light is the active movement and combat phase.
 
 - **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer. A bird that attacks contributes **no distance** that day.
 - **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day). The cost of attacking is the day's flight: the bird fights *instead of* flying, forfeiting its Migration Speed for that day.
-- Turn order is determined by the Initiative roll (see 5.3).
+- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. A Watcher may pass instead of activating; if one Watcher is out of untapped birds (or keeps passing), the other may continue activating one bird at a time. The day ends when both Watchers pass consecutively or have no birds left to act.
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
 
@@ -231,7 +231,7 @@ The physical board translates directly to the app, with the bookkeeping automate
 | Initiative die roll each morning | Server-side roll, animated |
 | Players police legality (slot placement, tap rules, drains) | The server is the rules authority — the client can only submit legal moves, mirroring how catch logging already works |
 
-- **Async play** maps cleanly: your First Light actions are your turn; Night resolves automatically once both players have acted, then the next day begins.
+- **Async play** maps to the alternating-activation structure: each single-bird activation hands the turn to the opponent, and Night resolves automatically once both pass. Because one game day can involve several back-and-forths, async matches should support notification batching and an optional "auto-pass the rest of the day" commitment to keep the pace pleasant.
 - **Spectating/replay** falls out of server-held match state.
 - The physical mat legend (bottom of the board sketch: Endurance / card / title / callouts) doubles as the print-at-home layout for matless play.
 
