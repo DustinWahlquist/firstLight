@@ -33,6 +33,7 @@ Two Watchers race their Flocks along a migration path. Each round is one in-game
 
 - A match is a series of **rounds**; each round is one in-game day: **First Light** (day) then **Night**.
 - **Win condition:** first Watcher to bank **10,000 km** of migration.
+- **The Flock (deck): 50 cards**, built from the Watcher's Aviary. A Watcher with fewer than 50 birds has the Flock filled out with **starter cards** — generic low-level birds, visually marked as starters, that can't be leveled up. As the player's real collection grows, starters get crowded out naturally.
 - **Setup:** each Watcher draws an opening hand of **5 cards** from their Flock deck.
 
 ---
@@ -160,7 +161,7 @@ The physical-board concepts above (tap = sideways, five-column mat, dice odomete
 
 | # | Question | Priority |
 |---|---|---|
-| 1 | Flock (deck) size for a match — fixed count, or a range? | High |
+| 1 | ~~Flock (deck) size?~~ Resolved: 50 cards, with starter-card fill for small aviaries (see §3). | — |
 | 2 | Which cards or abilities allow retrieval from the discard pile? (moves layer) | High |
 | 3 | Is there a max number of birds per Endurance Track slot, or unlimited stacking? | Medium |
 | 4 | Can Support effects (e.g. Drafting) restore endurance by sliding a bird right on the track? (moves layer) | Medium |
