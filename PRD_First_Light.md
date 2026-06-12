@@ -76,7 +76,7 @@ First Light is the active movement and combat phase.
 
 - **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer. A bird that attacks contributes **no distance** that day.
 - **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day). The cost of attacking is the day's flight: the bird fights *instead of* flying, forfeiting its Migration Speed for that day.
-- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. A Watcher may pass instead of activating; if one Watcher is out of untapped birds (or keeps passing), the other may continue activating one bird at a time. The day ends when both Watchers pass consecutively or have no birds left to act.
+- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. If one Watcher runs out of untapped birds, the other continues activating one at a time. **The day goes on until no one has any cards left to play in their Roost** — every bird activates every day.
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
 
