@@ -247,8 +247,10 @@ This table maps **rules, not looks**. The physical five-column mat is a state-tr
 
 ### 9.1 Online
 
-- **Live (synchronous):** Real-time 1v1 matches with turn timers
-- **Asynchronous:** Take-your-turn matches; notifications when it's your move
+**Build order: hotseat (dev milestone) → asynchronous (V1) → live (future).**
+
+- **Asynchronous (V1):** take-your-turn matches with friends via invites; notifications when it's your move. Match state lives server-side and every action is validated there (same authority model as catch logging). Clients subscribe to match updates, so when both players happen to be online, async play feels real-time for free.
+- **Live (future):** a dedicated real-time mode — turn timers, presence, disconnect handling — built as a layer on the async engine, not a separate system.
 - **Matchmaking (future):** skill-based rating system; considers Flock strength and player win/loss record — V1 matches are with friends (invites), no ranked queue
 - **Leaderboards:** Global and friends-based ranking
 
