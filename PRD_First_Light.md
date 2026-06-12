@@ -74,9 +74,10 @@ Each match is divided into rounds. Each round has two phases: **First Light** (d
 
 First Light is the active movement and combat phase.
 
-- **Migration:** Each Watcher moves their Flock based on active birds' Migration Speed stats (×100 km/day) and any Support boosts, advancing their km odometer. A bird that attacks contributes **no distance** that day.
-- **Offensive actions:** Watchers may attack the opposing Flock — applying fatigue, disrupting active cards, or culling birds. Acting **taps** the bird (turned sideways; one action per day). The cost of attacking is the day's flight: the bird fights *instead of* flying, forfeiting its Migration Speed for that day.
-- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. If one Watcher runs out of untapped birds, the other continues activating one at a time. **The day goes on until no one has any cards left to play in their Roost** — every bird activates every day.
+- **Activating a bird taps it** (turned sideways) and is a choice between two ways to spend its day:
+  - **Fly** — bank the bird's Migration Speed (×100 km, plus any Support boosts) on your km odometer.
+  - **Use a move** — attack the opposing Flock (fatigue, disruption, culling) or play a Defense/Support effect. Fighting replaces flying: a bird that uses a move banks **no distance** that day.
+- **Alternating activations:** the Initiative winner (see 5.3) activates a **single bird**, then the opponent activates a single bird, and so on back and forth. If one Watcher runs out of untapped birds, the other continues activating one at a time. **The day goes on until no one has any cards left to play in their Roost** — every bird activates every day, to fly or to fight.
 
 > If a morning sub-phase is introduced later, it would occur at the top of First Light before movement and combat begin.
 
@@ -159,7 +160,7 @@ The Roost is an **Endurance Track** — five slots labeled Endurance 5 down to E
 **Hand → track slot matching the bird's Endurance → slides left nightly → off the track → Discard**
 
 - **Deploy (Night):** a bird enters the track at the slot matching its Endurance stat (an Endurance 3 bird is placed in slot 3).
-- **Act (First Light):** using a bird — attacking, moving, supporting — **taps** it (turn the card sideways). A tapped bird can't act again that day, and an attacker forfeits its Migration Speed contribution for the day — fighting replaces flying.
+- **Act (First Light):** activating a bird — to fly or to use a move — **taps** it (turn the card sideways). A tapped bird is done for the day, and a bird that used a move banked no distance — fighting replaces flying.
 - **Nightly shift:** when Night comes, every bird slides **one slot left** (the day's toll) and untaps.
 - **Exhaustion:** a bird that slides off Endurance 1 leaves the board and goes to the discard pile.
 
