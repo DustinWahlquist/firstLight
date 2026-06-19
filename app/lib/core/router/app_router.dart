@@ -14,6 +14,7 @@ import '../../features/friends/friend_list_screen.dart';
 import '../../features/friends/friend_profile_screen.dart';
 import '../../features/friends/friends_screen.dart';
 import '../../features/level_up/level_up_screen.dart';
+import '../../features/match/match_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../models/bird_card.dart';
 import '../../models/user_profile.dart';
@@ -114,6 +115,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final args = state.extra as ({BirdCard oldCard, BirdCard newCard});
           return LevelUpScreen(oldCard: args.oldCard, newCard: args.newCard);
         },
+      ),
+      GoRoute(
+        path: '/match',
+        builder: (context, state) => const MatchPage(),
       ),
       GoRoute(
         path: '/friends',

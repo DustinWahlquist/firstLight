@@ -253,34 +253,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Opacity(
-            opacity: 0.5,
-            child: _SectionCard(
-              label: 'MATCH RECORD',
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Coming soon',
-                  style: Theme.of(context).textTheme.labelSmall,
+          _SectionCard(
+            label: 'MATCH RECORD',
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Preview',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _StatCell(label: 'W', value: '—'),
-                    ),
-                    Expanded(
-                      child: _StatCell(label: 'L', value: '—'),
-                    ),
-                  ],
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: Row(
+                    children: [
+                      Expanded(child: _StatCell(label: 'W', value: '—')),
+                      Expanded(child: _StatCell(label: 'L', value: '—')),
+                    ],
+                  ),
                 ),
-              ),
+                ListTile(
+                  leading: Icon(Icons.sports_esports_outlined,
+                      color: Theme.of(context).colorScheme.primary),
+                  title: const Text('Play a practice match'),
+                  subtitle: Text(
+                    'Race the migration vs. Mara',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/match'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
