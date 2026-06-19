@@ -1,0 +1,168 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:first_light/domain/match/match_engine.dart';
+import 'package:first_light/domain/match/match_rules.dart';
+import 'package:first_light/domain/match/match_seed.dart';
+import 'package:first_light/domain/match/match_state.dart';
+
+void main() {
+  group('MatchRules', () {
+    test('fly distance is speed × 100', () {
+      expect(MatchRules.flyKm(9), 900);
+      expect(MatchRules.flyKm(2), 200);
+    });
+
+    test('flock penalty bands', () {
+      expect(MatchRules.flockPenalty(2), 0);
+      expect(MatchRules.flockPenalty(4), 1);
+      expect(MatchRules.flockPenalty(6), 2);
+      expect(MatchRules.flockPenalty(7), 3);
+    });
+
+    test('initiative total subtracts the flock penalty', () {
+      expect(
+        MatchRules.initiativeTotal(roll: 15, skillMod: 3, roostSize: 5),
+        15 + 3 - 2,
+      );
+    });
+
+    test('first mover: higher total wins, ties go to the smaller flock', () {
+      expect(
+        MatchRules.youActFirst(youTotal: 18, oppTotal: 17, youRoostSize: 5, oppRoostSize: 3),
+        isTrue,
+      );
+      expect(
+        MatchRules.youActFirst(youTotal: 17, oppTotal: 17, youRoostSize: 3, oppRoostSize: 5),
+        isTrue, // tie, you have the smaller flock
+      );
+      expect(
+        MatchRules.youActFirst(youTotal: 17, oppTotal: 17, youRoostSize: 5, oppRoostSize: 3),
+        isFalse, // tie, opponent smaller
+      );
+    });
+  });
+
+  group('initiative', () {
+    test('roll resolves the first mover from totals', () {
+      final s = seedPracticeMatch();
+      // you: 18+3-pen(4)=20 ; opp: 5+2-pen(3)=6 → you first
+      final rolled = MatchEngine.rollInitiative(s, youRoll: 18, oppRoll: 5);
+      expect(rolled.initRolled, isTrue);
+      expect(rolled.firstMover, MatchSide.you);
+
+      final begun = MatchEngine.beginFirstLight(rolled);
+      expect(begun.screen, MatchScreen.day);
+      expect(begun.turn, MatchTurn.you);
+    });
+  });
+
+  group('fly', () {
+    test('banks distance, taps the bird, and hands off to the opponent', () {
+      final s = MatchEngine.beginFirstLight(
+        seedPracticeMatch().copyWith(firstMover: MatchSide.you, turn: MatchTurn.you),
+      );
+      final after = MatchEngine.fly(s, 'y1'); // Peregrine, speed 9
+
+      expect(after.youKm, 6200 + 900);
+      expect(after.youRoost.firstWhere((b) => b.id == 'y1').tapped, isTrue);
+      expect(after.flewCount, 1);
+      expect(after.flash!.km, 900);
+      expect(after.turn, MatchTurn.opp); // opponent still has untapped birds
+    });
+
+    test('reaching 10,000 km wins immediately', () {
+      var s = seedPracticeMatch().copyWith(
+        screen: MatchScreen.day,
+        turn: MatchTurn.you,
+        youKm: 9200, // +900 → 10,100
+      );
+      final after = MatchEngine.fly(s, 'y1');
+      expect(after.winner, MatchSide.you);
+      expect(after.turn, MatchTurn.lock);
+    });
+
+    test('day ends when both roosts are fully tapped', () {
+      // One bird each, both about to be spent.
+      var s = seedPracticeMatch().copyWith(
+        screen: MatchScreen.day,
+        turn: MatchTurn.you,
+        youRoost: [seedPracticeMatch().youRoost.first], // y1 untapped
+        oppRoost: [seedPracticeMatch().oppRoost.first.copyWith(tapped: true)],
+      );
+      final after = MatchEngine.fly(s, 'y1');
+      expect(after.dayOver, isTrue);
+      expect(after.turn, MatchTurn.lock);
+    });
+  });
+
+  group('opponentFly', () {
+    test('flies the highest-speed untapped bird', () {
+      final s = seedPracticeMatch().copyWith(screen: MatchScreen.day, turn: MatchTurn.opp);
+      final after = MatchEngine.opponentFly(s);
+      // o1 Bar-tailed Godwit speed 9 is highest.
+      expect(after.oppKm, 6800 + 900);
+      expect(after.oppRoost.firstWhere((b) => b.id == 'o1').tapped, isTrue);
+    });
+  });
+
+  group('night', () {
+    test('shift ages every bird and exhausts those that hit zero', () {
+      final s = MatchEngine.applyShift(seedPracticeMatch());
+      // y1 Peregrine had 1 day left → exhausted.
+      expect(s.youRoost.any((b) => b.id == 'y1'), isFalse);
+      expect(s.youDiscard.any((b) => b.id == 'y1' && b.reason == 'exhausted'), isTrue);
+      // y2 Arctic Tern 2 → 1, untapped.
+      final tern = s.youRoost.firstWhere((b) => b.id == 'y2');
+      expect(tern.daysLeft, 1);
+      expect(tern.tapped, isFalse);
+      expect(s.nightStep, 1);
+    });
+
+    test('draw respects the hand cap of 7', () {
+      // Hand of 6 → can only draw 1.
+      var s = seedPracticeMatch();
+      s = s.copyWith(youHand: [...s.youHand, s.youQueue.first]); // 6 in hand
+      final drawn = MatchEngine.applyDraw(s.copyWith(youQueue: s.youQueue.skip(1).toList()));
+      expect(drawn.youHand.length, 7);
+      expect(drawn.drawnIds.length, 1);
+    });
+
+    test('deploy moves up to 3 selected birds into the roost at full endurance', () {
+      var s = seedPracticeMatch();
+      s = MatchEngine.openDeploy(s.copyWith(nightStep: 2));
+      s = MatchEngine.toggleDeploy(s, 'h1');
+      s = MatchEngine.toggleDeploy(s, 'h2');
+      final before = s.youRoost.length;
+      final after = MatchEngine.confirmDeploy(s, youRoll: 10, oppRoll: 10);
+
+      expect(after.youRoost.length, before + 2);
+      expect(after.youHand.any((b) => b.id == 'h1'), isFalse);
+      final crane = after.youRoost.firstWhere((b) => b.id == 'h1');
+      expect(crane.daysLeft, crane.endurance);
+      expect(crane.tapped, isFalse);
+      expect(after.nightStep, 4);
+      expect(after.dawnInit, isNotNull);
+    });
+
+    test('deploy selection caps at 3', () {
+      var s = MatchEngine.openDeploy(seedPracticeMatch().copyWith(nightStep: 2));
+      for (final id in ['h1', 'h2', 'h3', 'h4']) {
+        s = MatchEngine.toggleDeploy(s, id);
+      }
+      expect(s.deploySelected.length, 3);
+    });
+
+    test('beginNextDay advances the day and hands initiative to the first mover', () {
+      var s = seedPracticeMatch().copyWith(
+        screen: MatchScreen.night,
+        nightStep: 4,
+        firstMover: MatchSide.opp,
+        day: 1,
+      );
+      final next = MatchEngine.beginNextDay(s);
+      expect(next.screen, MatchScreen.day);
+      expect(next.day, 2);
+      expect(next.turn, MatchTurn.opp);
+      expect(next.shiftReport, isNull);
+    });
+  });
+}
