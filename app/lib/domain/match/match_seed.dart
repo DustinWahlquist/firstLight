@@ -55,9 +55,18 @@ MatchState seedPracticeMatch() {
       b('q4', 'Blackpoll Warbler', 'Setophaga striata', 3, 8, 1),
       b('q5', 'Northern Pintail', 'Anas acuta', 2, 5, 3),
     ],
-    oppHand: 4,
+    oppHand: [
+      b('oh1', 'Semipalmated Plover', 'Charadrius semipalmatus', 2, 6, 2),
+      b('oh2', 'Ruddy Turnstone', 'Arenaria interpres', 3, 6, 2),
+      b('oh3', 'Least Sandpiper', 'Calidris minutilla', 2, 5, 2),
+      b('oh4', 'Black-bellied Plover', 'Pluvialis squatarola', 3, 7, 2),
+    ],
     oppDeck: 39,
-    oppDiscard: 3,
+    oppDiscard: [
+      b('od1', 'Killdeer', 'Charadrius vociferus', 2, 5, 3).copyWith(reason: 'exhausted'),
+      b('od2', 'Spotted Sandpiper', 'Actitis macularius', 2, 5, 2).copyWith(reason: 'exhausted'),
+      b('od3', 'Willet', 'Tringa semipalmata', 3, 6, 2).copyWith(reason: 'exhausted'),
+    ],
     oppQueue: [
       b('p1', 'Hudsonian Godwit', 'Limosa haemastica', 3, 8, 2),
       b('p2', 'Sanderling', 'Calidris alba', 2, 6, 2),

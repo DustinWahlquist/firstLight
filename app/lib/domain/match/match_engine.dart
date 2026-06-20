@@ -113,7 +113,7 @@ abstract final class MatchEngine {
       youRoost: you.survivors,
       oppRoost: opp.survivors,
       youDiscard: [...s.youDiscard, ...you.fell],
-      oppDiscard: s.oppDiscard + opp.fell.length,
+      oppDiscard: [...s.oppDiscard, ...opp.fell],
       shiftReport: ShiftReport(you: you.report, oppFell: opp.fell.length),
       nightStep: 1,
     );
@@ -121,16 +121,21 @@ abstract final class MatchEngine {
 
   /// Night step 1→2: draw 2, capped at a hand of 7 (overflow forfeited).
   static MatchState applyDraw(MatchState s) {
-    final room = MatchRules.handCap - s.youHand.length;
-    final take = room.clamp(0, MatchRules.drawPerNight).clamp(0, s.youQueue.length);
+    final take = (MatchRules.handCap - s.youHand.length)
+        .clamp(0, MatchRules.drawPerNight)
+        .clamp(0, s.youQueue.length);
     final drawn = s.youQueue.take(take).toList();
-    final oppTake = (MatchRules.handCap - s.oppHand).clamp(0, MatchRules.drawPerNight);
+    final oppTake = (MatchRules.handCap - s.oppHand.length)
+        .clamp(0, MatchRules.drawPerNight)
+        .clamp(0, s.oppQueue.length);
+    final oppDrawn = s.oppQueue.take(oppTake).toList();
     return s.copyWith(
       youHand: [...s.youHand, ...drawn],
       youQueue: s.youQueue.skip(take).toList(),
       youDeck: (s.youDeck - take).clamp(0, s.youDeck),
       drawnIds: drawn.map((b) => b.id).toList(),
-      oppHand: s.oppHand + oppTake,
+      oppHand: [...s.oppHand, ...oppDrawn],
+      oppQueue: s.oppQueue.skip(oppTake).toList(),
       oppDeck: (s.oppDeck - oppTake).clamp(0, s.oppDeck),
       nightStep: 2,
     );
@@ -164,9 +169,15 @@ abstract final class MatchEngine {
     final hand = s.youHand.where((b) => !s.deploySelected.contains(b.id)).toList();
     final roost = [...s.youRoost, ...deploying];
 
-    final oppTake = MatchRules.deployPerNight.clamp(0, s.oppHand).clamp(0, s.oppQueue.length);
-    final oppNew = s.oppQueue.take(oppTake).map((b) => b.deployed()).toList();
+    // Bot AI deploys up to 3 of its longest-lived birds from hand.
+    final oppDeploy = (s.oppHand.toList()
+          ..sort((a, b) => b.endurance.compareTo(a.endurance)))
+        .take(MatchRules.deployPerNight)
+        .toList();
+    final oppDeployIds = oppDeploy.map((b) => b.id).toSet();
+    final oppNew = oppDeploy.map((b) => b.deployed()).toList();
     final oppRoost = [...s.oppRoost, ...oppNew];
+    final oppHandLeft = s.oppHand.where((b) => !oppDeployIds.contains(b.id)).toList();
 
     final youTotal = MatchRules.initiativeTotal(
         roll: youRoll, skillMod: s.youMod, roostSize: roost.length);
@@ -184,8 +195,7 @@ abstract final class MatchEngine {
       youRoost: roost,
       youHand: hand,
       oppRoost: oppRoost,
-      oppHand: (s.oppHand - oppTake).clamp(0, s.oppHand),
-      oppQueue: s.oppQueue.skip(oppTake).toList(),
+      oppHand: oppHandLeft,
       nightStep: 4,
       dawnInit: DawnInit(youTotal: youTotal, oppTotal: oppTotal, first: first),
       firstMover: first,

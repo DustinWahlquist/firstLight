@@ -469,7 +469,7 @@ class _MaraPage extends StatelessWidget {
               const SizedBox(width: 10),
               Text('Mara', style: theme.textTheme.titleMedium),
               const Spacer(),
-              Text('${s.oppHand} in hand', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              Text('${s.oppHand.length} in hand', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
         ),

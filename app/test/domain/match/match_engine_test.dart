@@ -41,6 +41,28 @@ void main() {
     });
   });
 
+  group('perspective flip', () {
+    test('swaps you/opp so each player sees themselves as "you"', () {
+      final s = seedPracticeMatch().copyWith(turn: MatchTurn.you);
+      final f = s.flip();
+      expect(f.youKm, s.oppKm);
+      expect(f.oppKm, s.youKm);
+      expect(f.youRoost.first.id, s.oppRoost.first.id);
+      expect(f.youHand.length, s.oppHand.length);
+      expect(f.turn, MatchTurn.opp); // your turn becomes the opponent's
+    });
+
+    test('flipping twice is the identity', () {
+      final s = seedPracticeMatch().copyWith(turn: MatchTurn.opp, youKm: 4200, oppKm: 5100);
+      final back = s.flip().flip();
+      expect(back.youKm, s.youKm);
+      expect(back.oppKm, s.oppKm);
+      expect(back.turn, s.turn);
+      expect(back.youRoost.length, s.youRoost.length);
+      expect(back.firstMover, s.firstMover);
+    });
+  });
+
   group('serialization', () {
     test('a mid-match state round-trips through JSON', () {
       // Advance a bit so roosts, hands, discard, and km all differ.

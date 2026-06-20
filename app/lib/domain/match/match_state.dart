@@ -73,6 +73,8 @@ class MatchState {
     required this.flewCount,
     required this.flash,
     required this.dayOver,
+    this.youNightDone = false,
+    this.oppNightDone = false,
   });
 
   final MatchScreen screen;
@@ -90,9 +92,11 @@ class MatchState {
   final List<MatchBird> youDiscard;
   final List<MatchBird> youQueue; // draw source (front = top of deck)
 
-  final int oppHand; // hidden — count only
+  // Fully materialized so the state is symmetric for two-human play. The
+  // opponent's hand is private — render only its length to the viewer.
+  final List<MatchBird> oppHand;
   final int oppDeck;
-  final int oppDiscard;
+  final List<MatchBird> oppDiscard;
   final List<MatchBird> oppQueue;
 
   final int youMod;
@@ -120,8 +124,62 @@ class MatchState {
   final FlyFlash? flash;
   final bool dayOver; // both roosts fully tapped; controller moves to Night
 
+  // Async night: each player completes their own night independently.
+  final bool youNightDone;
+  final bool oppNightDone;
+
   bool get youHasUntapped => youRoost.any((b) => !b.tapped);
   bool get oppHasUntapped => oppRoost.any((b) => !b.tapped);
+
+  /// The same match from the opponent's point of view — every you/opp pair
+  /// swapped, so each player always sees themselves as "you". Night UI fields
+  /// (nightStep/drawnIds/deploySelected) belong to whoever is acting and are
+  /// carried as-is. Used to store canonically (player1's view) yet let player2
+  /// play as "you".
+  MatchState flip() {
+    MatchTurn flipTurn(MatchTurn t) => switch (t) {
+          MatchTurn.you => MatchTurn.opp,
+          MatchTurn.opp => MatchTurn.you,
+          MatchTurn.lock => MatchTurn.lock,
+        };
+    MatchSide flipSide(MatchSide s) =>
+        s == MatchSide.you ? MatchSide.opp : MatchSide.you;
+    return MatchState(
+      screen: screen,
+      turn: flipTurn(turn),
+      day: day,
+      youKm: oppKm,
+      oppKm: youKm,
+      youRoost: oppRoost,
+      oppRoost: youRoost,
+      youHand: oppHand,
+      youDeck: oppDeck,
+      youDiscard: oppDiscard,
+      youQueue: oppQueue,
+      oppHand: youHand,
+      oppDeck: youDeck,
+      oppDiscard: youDiscard,
+      oppQueue: youQueue,
+      youMod: oppMod,
+      oppMod: youMod,
+      youRoll: oppRoll,
+      oppRoll: youRoll,
+      initRolled: initRolled,
+      firstMover: flipSide(firstMover),
+      nightStep: nightStep,
+      shiftReport: shiftReport,
+      drawnIds: drawnIds,
+      deploySelected: deploySelected,
+      dawnInit: dawnInit,
+      winner: winner == null ? null : flipSide(winner!),
+      daysPlayed: daysPlayed,
+      flewCount: flewCount,
+      flash: flash,
+      dayOver: dayOver,
+      youNightDone: oppNightDone,
+      oppNightDone: youNightDone,
+    );
+  }
 
   static List<MatchBird> _birds(dynamic list) =>
       ((list as List?) ?? const [])
@@ -140,9 +198,9 @@ class MatchState {
         'youDeck': youDeck,
         'youDiscard': youDiscard.map((b) => b.toJson()).toList(),
         'youQueue': youQueue.map((b) => b.toJson()).toList(),
-        'oppHand': oppHand,
+        'oppHand': oppHand.map((b) => b.toJson()).toList(),
         'oppDeck': oppDeck,
-        'oppDiscard': oppDiscard,
+        'oppDiscard': oppDiscard.map((b) => b.toJson()).toList(),
         'oppQueue': oppQueue.map((b) => b.toJson()).toList(),
         'youMod': youMod,
         'oppMod': oppMod,
@@ -157,6 +215,8 @@ class MatchState {
         'daysPlayed': daysPlayed,
         'flewCount': flewCount,
         'dayOver': dayOver,
+        'youNightDone': youNightDone,
+        'oppNightDone': oppNightDone,
         // shiftReport / dawnInit / flash are transient — not persisted.
       };
 
@@ -172,9 +232,9 @@ class MatchState {
         youDeck: json['youDeck'] as int,
         youDiscard: _birds(json['youDiscard']),
         youQueue: _birds(json['youQueue']),
-        oppHand: json['oppHand'] as int,
+        oppHand: _birds(json['oppHand']),
         oppDeck: json['oppDeck'] as int,
-        oppDiscard: json['oppDiscard'] as int,
+        oppDiscard: _birds(json['oppDiscard']),
         oppQueue: _birds(json['oppQueue']),
         youMod: json['youMod'] as int,
         oppMod: json['oppMod'] as int,
@@ -194,6 +254,8 @@ class MatchState {
         flewCount: json['flewCount'] as int,
         flash: null,
         dayOver: json['dayOver'] as bool? ?? false,
+        youNightDone: json['youNightDone'] as bool? ?? false,
+        oppNightDone: json['oppNightDone'] as bool? ?? false,
       );
 
   MatchState copyWith({
@@ -208,9 +270,9 @@ class MatchState {
     int? youDeck,
     List<MatchBird>? youDiscard,
     List<MatchBird>? youQueue,
-    int? oppHand,
+    List<MatchBird>? oppHand,
     int? oppDeck,
-    int? oppDiscard,
+    List<MatchBird>? oppDiscard,
     List<MatchBird>? oppQueue,
     int? youRoll,
     int? oppRoll,
@@ -226,6 +288,8 @@ class MatchState {
     int? flewCount,
     FlyFlash? flash,
     bool? dayOver,
+    bool? youNightDone,
+    bool? oppNightDone,
     bool clearFlash = false,
     bool clearShiftReport = false,
     bool clearDawnInit = false,
@@ -262,5 +326,7 @@ class MatchState {
         flewCount: flewCount ?? this.flewCount,
         flash: clearFlash ? null : (flash ?? this.flash),
         dayOver: dayOver ?? this.dayOver,
+        youNightDone: youNightDone ?? this.youNightDone,
+        oppNightDone: oppNightDone ?? this.oppNightDone,
       );
 }
