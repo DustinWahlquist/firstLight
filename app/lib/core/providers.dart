@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/aviary_repository.dart';
 import '../data/friends_repository.dart';
 import '../data/geocoding_service.dart';
+import '../data/match_repository.dart';
 import '../data/profile_repository.dart';
 import '../data/social_repository.dart';
 import '../data/usage_events_repository.dart';
@@ -52,6 +53,10 @@ final geocodingServiceProvider = Provider<GeocodingService>(
 
 final usageEventsProvider = Provider<UsageEventsRepository>(
   (ref) => UsageEventsRepository(ref.watch(supabaseClientProvider)),
+);
+
+final matchRepositoryProvider = Provider<MatchRepository>(
+  (ref) => MatchRepository(ref.watch(supabaseClientProvider)),
 );
 
 final logCatchUseCaseProvider = Provider<LogCatchUseCase>(

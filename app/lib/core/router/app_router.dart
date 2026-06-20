@@ -14,6 +14,7 @@ import '../../features/friends/friend_list_screen.dart';
 import '../../features/friends/friend_profile_screen.dart';
 import '../../features/friends/friends_screen.dart';
 import '../../features/level_up/level_up_screen.dart';
+import '../../features/match/active_games_screen.dart';
 import '../../features/match/match_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../models/bird_card.dart';
@@ -88,6 +89,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: '/',
               builder: (context, state) => const AviaryScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/games',
+              builder: (context, state) => const ActiveGamesScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [

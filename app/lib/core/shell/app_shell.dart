@@ -75,6 +75,11 @@ class AppShell extends ConsumerWidget {
             label: 'Aviary',
           ),
           NavigationDestination(
+            icon: Icon(Icons.sports_esports_outlined, color: theme.colorScheme.onSurfaceVariant),
+            selectedIcon: Icon(Icons.sports_esports, color: theme.colorScheme.onSecondaryContainer),
+            label: 'Games',
+          ),
+          NavigationDestination(
             icon: profileIcon(),
             selectedIcon: profileIcon(selected: true),
             label: 'Profile',

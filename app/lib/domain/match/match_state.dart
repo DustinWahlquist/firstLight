@@ -123,6 +123,79 @@ class MatchState {
   bool get youHasUntapped => youRoost.any((b) => !b.tapped);
   bool get oppHasUntapped => oppRoost.any((b) => !b.tapped);
 
+  static List<MatchBird> _birds(dynamic list) =>
+      ((list as List?) ?? const [])
+          .map((e) => MatchBird.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+
+  Map<String, dynamic> toJson() => {
+        'screen': screen.name,
+        'turn': turn.name,
+        'day': day,
+        'youKm': youKm,
+        'oppKm': oppKm,
+        'youRoost': youRoost.map((b) => b.toJson()).toList(),
+        'oppRoost': oppRoost.map((b) => b.toJson()).toList(),
+        'youHand': youHand.map((b) => b.toJson()).toList(),
+        'youDeck': youDeck,
+        'youDiscard': youDiscard.map((b) => b.toJson()).toList(),
+        'youQueue': youQueue.map((b) => b.toJson()).toList(),
+        'oppHand': oppHand,
+        'oppDeck': oppDeck,
+        'oppDiscard': oppDiscard,
+        'oppQueue': oppQueue.map((b) => b.toJson()).toList(),
+        'youMod': youMod,
+        'oppMod': oppMod,
+        'youRoll': youRoll,
+        'oppRoll': oppRoll,
+        'initRolled': initRolled,
+        'firstMover': firstMover.name,
+        'nightStep': nightStep,
+        'drawnIds': drawnIds,
+        'deploySelected': deploySelected,
+        'winner': winner?.name,
+        'daysPlayed': daysPlayed,
+        'flewCount': flewCount,
+        'dayOver': dayOver,
+        // shiftReport / dawnInit / flash are transient — not persisted.
+      };
+
+  factory MatchState.fromJson(Map<String, dynamic> json) => MatchState(
+        screen: MatchScreen.values.byName(json['screen'] as String),
+        turn: MatchTurn.values.byName(json['turn'] as String),
+        day: json['day'] as int,
+        youKm: json['youKm'] as int,
+        oppKm: json['oppKm'] as int,
+        youRoost: _birds(json['youRoost']),
+        oppRoost: _birds(json['oppRoost']),
+        youHand: _birds(json['youHand']),
+        youDeck: json['youDeck'] as int,
+        youDiscard: _birds(json['youDiscard']),
+        youQueue: _birds(json['youQueue']),
+        oppHand: json['oppHand'] as int,
+        oppDeck: json['oppDeck'] as int,
+        oppDiscard: json['oppDiscard'] as int,
+        oppQueue: _birds(json['oppQueue']),
+        youMod: json['youMod'] as int,
+        oppMod: json['oppMod'] as int,
+        youRoll: json['youRoll'] as int,
+        oppRoll: json['oppRoll'] as int,
+        initRolled: json['initRolled'] as bool,
+        firstMover: MatchSide.values.byName(json['firstMover'] as String),
+        nightStep: json['nightStep'] as int,
+        shiftReport: null,
+        drawnIds: ((json['drawnIds'] as List?) ?? const []).cast<String>(),
+        deploySelected: ((json['deploySelected'] as List?) ?? const []).cast<String>(),
+        dawnInit: null,
+        winner: json['winner'] == null
+            ? null
+            : MatchSide.values.byName(json['winner'] as String),
+        daysPlayed: json['daysPlayed'] as int,
+        flewCount: json['flewCount'] as int,
+        flash: null,
+        dayOver: json['dayOver'] as bool? ?? false,
+      );
+
   MatchState copyWith({
     MatchScreen? screen,
     MatchTurn? turn,

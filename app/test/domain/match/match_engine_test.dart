@@ -41,6 +41,27 @@ void main() {
     });
   });
 
+  group('serialization', () {
+    test('a mid-match state round-trips through JSON', () {
+      // Advance a bit so roosts, hands, discard, and km all differ.
+      var s = MatchEngine.beginFirstLight(
+        seedPracticeMatch().copyWith(turn: MatchTurn.you),
+      );
+      s = MatchEngine.fly(s, 'y1');
+      s = MatchEngine.applyShift(s.copyWith(screen: MatchScreen.night));
+
+      final restored = MatchState.fromJson(s.toJson());
+      expect(restored.screen, s.screen);
+      expect(restored.turn, s.turn);
+      expect(restored.youKm, s.youKm);
+      expect(restored.youRoost.length, s.youRoost.length);
+      expect(restored.youDiscard.length, s.youDiscard.length);
+      expect(restored.youRoost.first.id, s.youRoost.first.id);
+      expect(restored.flewCount, s.flewCount);
+      expect(restored.firstMover, s.firstMover);
+    });
+  });
+
   group('initiative', () {
     test('roll resolves the first mover from totals', () {
       final s = seedPracticeMatch();

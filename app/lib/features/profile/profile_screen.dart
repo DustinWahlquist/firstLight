@@ -11,6 +11,7 @@ import '../../core/providers.dart';
 import '../../models/bird_card.dart';
 import '../aviary/aviary_providers.dart';
 import '../friends/friends_providers.dart';
+import '../match/active_games_screen.dart';
 import 'edit_profile_screen.dart';
 import 'profile_providers.dart';
 
@@ -290,7 +291,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/match'),
+                  onTap: () => startBotMatch(context, ref),
                 ),
               ],
             ),

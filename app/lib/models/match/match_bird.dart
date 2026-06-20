@@ -50,4 +50,31 @@ class MatchBird {
   /// A fresh copy as it enters the roost: full endurance, untapped.
   MatchBird deployed() =>
       copyWith(daysLeft: endurance, tapped: false);
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'sci': sci,
+        'level': level,
+        'speed': speed,
+        'endurance': endurance,
+        'daysLeft': daysLeft,
+        'tapped': tapped,
+        'starter': starter,
+        if (reason != null) 'reason': reason,
+      };
+
+  factory MatchBird.fromJson(Map<String, dynamic> json) => MatchBird(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        sci: json['sci'] as String,
+        level: json['level'] as int,
+        speed: json['speed'] as int,
+        endurance: json['endurance'] as int,
+        daysLeft: json['daysLeft'] as int,
+        tapped: json['tapped'] as bool? ?? false,
+        starter: json['starter'] as bool? ?? false,
+        reason: json['reason'] as String?,
+      );
 }
+
