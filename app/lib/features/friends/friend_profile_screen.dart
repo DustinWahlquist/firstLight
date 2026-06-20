@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 import '../../domain/game_rules.dart';
 import '../../models/bird_card.dart';
@@ -51,6 +52,25 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
   Future<void> _sendRequest() async {
     await ref.read(friendsRepositoryProvider).sendFriendRequest(widget.profile.id);
     if (mounted) setState(() => _requestSent = true);
+  }
+
+  bool _challengeSent = false;
+
+  Future<void> _challenge() async {
+    final me = Supabase.instance.client.auth.currentUser;
+    final myName = (me?.userMetadata?['display_name'] as String?) ?? me?.email ?? 'A Watcher';
+    await ref.read(matchRepositoryProvider).challengeFriend(
+          opponentId: widget.profile.id,
+          opponentName: widget.profile.displayName ?? widget.profile.username ?? 'Watcher',
+          opponentAvatarUrl: widget.profile.avatarUrl,
+          challengerName: myName,
+        );
+    if (mounted) {
+      setState(() => _challengeSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Challenge sent — find it in Games')),
+      );
+    }
   }
 
   @override
@@ -129,6 +149,20 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
             ),
           ),
 
+          if (isAccepted) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _challengeSent ? null : _challenge,
+                icon: const Icon(Icons.sports_esports_outlined, size: 18),
+                label: Text(_challengeSent ? 'Challenge sent' : 'Challenge to a race'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_loadingFriendship)
             const Center(child: CircularProgressIndicator())
           else if (!_canSeeContent)
