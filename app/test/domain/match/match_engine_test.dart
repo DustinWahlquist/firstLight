@@ -41,6 +41,38 @@ void main() {
     });
   });
 
+  group('friend (async) night', () {
+    test('each player takes their own night; second finisher starts the day', () {
+      // Enter night with you as first mover.
+      var s = seedPracticeMatch().copyWith(
+        screen: MatchScreen.day,
+        dayOver: true,
+        firstMover: MatchSide.you,
+      );
+      s = MatchEngine.enterNightFriend(s);
+      expect(s.screen, MatchScreen.night);
+      expect(s.turn, MatchTurn.you); // first mover's night
+      expect(s.youNightDone, isFalse);
+
+      // You draw + deploy → night hands off to the opponent, not dawn.
+      s = MatchEngine.friendDraw(s);
+      s = MatchEngine.toggleDeploy(s.copyWith(nightStep: 3), 'h2');
+      s = MatchEngine.friendConfirmDeploy(s, youRoll: 10, oppRoll: 10);
+      expect(s.youNightDone, isTrue);
+      expect(s.turn, MatchTurn.opp); // opponent's night now
+      expect(s.screen, MatchScreen.night); // not the next day yet
+
+      // Opponent (after flip, they are "you") takes their night and finishes.
+      var o = s.flip();
+      expect(o.oppNightDone, isTrue); // the first player, from opp view
+      o = MatchEngine.friendDraw(o);
+      o = MatchEngine.friendConfirmDeploy(o.copyWith(nightStep: 3), youRoll: 12, oppRoll: 8);
+      // Both done → next day begins.
+      expect(o.screen, MatchScreen.day);
+      expect(o.day, seedPracticeMatch().day + 1);
+    });
+  });
+
   group('perspective flip', () {
     test('swaps you/opp so each player sees themselves as "you"', () {
       final s = seedPracticeMatch().copyWith(turn: MatchTurn.you);

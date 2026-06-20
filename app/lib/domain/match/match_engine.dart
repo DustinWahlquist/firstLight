@@ -202,6 +202,100 @@ abstract final class MatchEngine {
     );
   }
 
+  // ── Friend (two-human, async) night ──
+  //
+  // Night is taken one player at a time so there are never two simultaneous
+  // writers: the day-ender applies the deterministic shift, then each player
+  // draws and deploys their own hand in turn, and the second finisher rolls
+  // initiative for the next day.
+
+  /// Day over → enter night: shift both roosts (deterministic), first mover
+  /// takes their night first.
+  static MatchState enterNightFriend(MatchState s) {
+    final you = _shift(s.youRoost);
+    final opp = _shift(s.oppRoost);
+    return s.copyWith(
+      screen: MatchScreen.night,
+      youRoost: you.survivors,
+      oppRoost: opp.survivors,
+      youDiscard: [...s.youDiscard, ...you.fell],
+      oppDiscard: [...s.oppDiscard, ...opp.fell],
+      shiftReport: ShiftReport(you: you.report, oppFell: opp.fell.length),
+      turn: s.firstMover == MatchSide.you ? MatchTurn.you : MatchTurn.opp,
+      nightStep: 1,
+      dayOver: false,
+      youNightDone: false,
+      oppNightDone: false,
+      clearFlash: true,
+    );
+  }
+
+  /// Friend night: draw for the local player only (the opponent draws on
+  /// their own turn).
+  static MatchState friendDraw(MatchState s) {
+    final take = (MatchRules.handCap - s.youHand.length)
+        .clamp(0, MatchRules.drawPerNight)
+        .clamp(0, s.youQueue.length);
+    final drawn = s.youQueue.take(take).toList();
+    return s.copyWith(
+      youHand: [...s.youHand, ...drawn],
+      youQueue: s.youQueue.skip(take).toList(),
+      youDeck: (s.youDeck - take).clamp(0, s.youDeck),
+      drawnIds: drawn.map((b) => b.id).toList(),
+      nightStep: 2,
+    );
+  }
+
+  /// Friend night: deploy the local player's selected birds, mark them done.
+  /// If the opponent has already finished their night, roll initiative and
+  /// begin the next day; otherwise hand the night to the opponent.
+  static MatchState friendConfirmDeploy(
+    MatchState s, {
+    required int youRoll,
+    required int oppRoll,
+  }) {
+    final deploying = s.youHand
+        .where((b) => s.deploySelected.contains(b.id))
+        .map((b) => b.deployed())
+        .toList();
+    final hand = s.youHand.where((b) => !s.deploySelected.contains(b.id)).toList();
+    final roost = [...s.youRoost, ...deploying];
+
+    final base = s.copyWith(
+      youRoost: roost,
+      youHand: hand,
+      youNightDone: true,
+      deploySelected: const [],
+    );
+
+    if (s.oppNightDone) {
+      // Both finished — roll initiative and start the next day.
+      final youTotal = MatchRules.initiativeTotal(
+          roll: youRoll, skillMod: s.youMod, roostSize: roost.length);
+      final oppTotal = MatchRules.initiativeTotal(
+          roll: oppRoll, skillMod: s.oppMod, roostSize: s.oppRoost.length);
+      final youFirst = MatchRules.youActFirst(
+        youTotal: youTotal,
+        oppTotal: oppTotal,
+        youRoostSize: roost.length,
+        oppRoostSize: s.oppRoost.length,
+      );
+      return base.copyWith(
+        screen: MatchScreen.day,
+        day: s.day + 1,
+        firstMover: youFirst ? MatchSide.you : MatchSide.opp,
+        turn: youFirst ? MatchTurn.you : MatchTurn.opp,
+        nightStep: 0,
+        drawnIds: const [],
+        youNightDone: false,
+        oppNightDone: false,
+        clearShiftReport: true,
+      );
+    }
+    // Hand the night to the opponent; you wait.
+    return base.copyWith(turn: MatchTurn.opp, nightStep: 0, drawnIds: const []);
+  }
+
   /// Night step 4 → next day's First Light.
   static MatchState beginNextDay(MatchState s) => s.copyWith(
         screen: MatchScreen.day,
