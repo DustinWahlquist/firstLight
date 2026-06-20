@@ -39,12 +39,13 @@ class _DayBoardViewState extends ConsumerState<DayBoardView> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(matchControllerProvider);
+    final isFriend = ref.read(matchControllerProvider.notifier).isFriend;
 
     return SafeArea(
       child: Column(
         children: [
           _MatchHeader(day: s.day),
-          _TurnBanner(turn: s.turn, screen: s.screen),
+          _TurnBanner(turn: s.turn, screen: s.screen, isFriend: isFriend),
           Expanded(
             child: PageView(
               scrollDirection: Axis.vertical,
@@ -102,14 +103,16 @@ class _MatchHeader extends StatelessWidget {
 }
 
 class _TurnBanner extends StatelessWidget {
-  const _TurnBanner({required this.turn, required this.screen});
+  const _TurnBanner({required this.turn, required this.screen, this.isFriend = false});
   final MatchTurn turn;
   final MatchScreen screen;
+  final bool isFriend;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final yourTurn = turn == MatchTurn.you;
+    final waitingText = isFriend ? 'Waiting for your opponent…' : 'Mara is flying…';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
@@ -126,7 +129,7 @@ class _TurnBanner extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            yourTurn ? 'Your move — tap a bird to fly' : 'Mara is flying…',
+            yourTurn ? 'Your move — tap a bird to fly' : waitingText,
             style: theme.textTheme.bodySmall?.copyWith(
               color: yourTurn ? const Color(0xFF1A7FA8) : theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,

@@ -10,8 +10,9 @@ final matchesListProvider = FutureProvider.autoDispose<List<MatchSummary>>(
   (ref) => ref.watch(matchRepositoryProvider).listMatches(),
 );
 
-/// Loads a bot match into the controller's cache and opens the board.
-Future<void> openBotMatch(BuildContext context, WidgetRef ref, String id) async {
+/// Loads a match (bot or friend) into the controller's cache and opens the
+/// board. The controller reads the cached perspective + mode.
+Future<void> openMatchById(BuildContext context, WidgetRef ref, String id) async {
   await ref.read(matchRepositoryProvider).openMatch(id);
   ref.read(activeMatchIdProvider.notifier).state = id;
   if (context.mounted) await context.push('/match');
@@ -140,24 +141,13 @@ class _GameTile extends ConsumerWidget {
   }
 
   void _open(BuildContext context, WidgetRef ref) {
-    if (game.isBot) {
-      openBotMatch(context, ref, game.id);
-    } else {
-      // Two-human play ships next; the challenge is saved meanwhile.
-      showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Live play coming soon'),
-          content: Text(
-            'Your match with ${game.otherName} is saved. Playing friend '
-            'matches live is the next update — bot matches are ready now.',
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
-          ],
-        ),
+    if (game.isOutgoingInvite) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Waiting for ${game.otherName} to accept')),
       );
+      return;
     }
+    openMatchById(context, ref, game.id);
   }
 
   @override

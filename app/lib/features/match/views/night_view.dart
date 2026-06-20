@@ -15,6 +15,13 @@ class NightView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(matchControllerProvider);
     final ctrl = ref.read(matchControllerProvider.notifier);
+
+    // In a friend match, once you've taken your night you wait for the
+    // opponent to take theirs; the next day arrives via realtime.
+    if (ctrl.isFriend && (s.youNightDone || s.turn != MatchTurn.you)) {
+      return const _NightWaiting();
+    }
+
     final step = s.nightStep;
     final dawn = step == 4;
     final light = !dawn; // steps 0–3 use light text on a dark sky
@@ -95,6 +102,48 @@ class NightView extends ConsumerWidget {
         3 => s.deploySelected.isEmpty ? 'Skip deploy' : 'Deploy ${s.deploySelected.length}',
         _ => 'Begin Day ${s.day + 1}',
       };
+}
+
+class _NightWaiting extends StatelessWidget {
+  const _NightWaiting();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [MatchPalette.duskTop, MatchPalette.duskBottom],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.nightlight_outlined, color: MatchPalette.sunNight, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Night',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Your flock is set. Waiting for your opponent to take their '
+                  'night — the next day begins once they’re done.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StepBody extends StatelessWidget {

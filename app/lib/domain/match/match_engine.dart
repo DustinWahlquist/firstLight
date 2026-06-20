@@ -222,7 +222,7 @@ abstract final class MatchEngine {
       oppDiscard: [...s.oppDiscard, ...opp.fell],
       shiftReport: ShiftReport(you: you.report, oppFell: opp.fell.length),
       turn: s.firstMover == MatchSide.you ? MatchTurn.you : MatchTurn.opp,
-      nightStep: 1,
+      nightStep: 0, // nightfall intro; shift is already applied above
       dayOver: false,
       youNightDone: false,
       oppNightDone: false,

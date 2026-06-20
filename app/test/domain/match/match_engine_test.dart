@@ -41,6 +41,34 @@ void main() {
     });
   });
 
+  group('friend (async) day', () {
+    test('turns alternate correctly across the perspective flip', () {
+      // Canonical state = creator's view; creator to move.
+      var canon = seedPracticeMatch().copyWith(
+        screen: MatchScreen.day,
+        turn: MatchTurn.you,
+        initRolled: true,
+      );
+
+      // Creator's client (amOpponent = false): fly the Peregrine.
+      var creatorLocal = MatchEngine.fly(canon, 'y1');
+      expect(creatorLocal.turn, MatchTurn.opp); // handed to the opponent
+      canon = creatorLocal; // saved canonically
+
+      // Opponent's client loads and flips → it's now their turn.
+      var oppLocal = canon.flip();
+      expect(oppLocal.turn, MatchTurn.you);
+      final oppBird = oppLocal.youRoost.first.id; // 'o1', their bird
+      oppLocal = MatchEngine.fly(oppLocal, oppBird);
+      canon = oppLocal.flip(); // opponent saves canonically
+
+      // Back in the creator's view: their turn again, both banked distance.
+      expect(canon.turn, MatchTurn.you);
+      expect(canon.youKm, greaterThan(6200));
+      expect(canon.oppKm, greaterThan(6800));
+    });
+  });
+
   group('friend (async) night', () {
     test('each player takes their own night; second finisher starts the day', () {
       // Enter night with you as first mover.

@@ -75,11 +75,13 @@ class MatchRepository {
   MatchRepository(this._client);
 
   final SupabaseClient _client;
-  final _cache = <String, MatchState>{};
+  final _cache = <String, MatchState>{}; // canonical (player1/creator) state
+  final _meta = <String, ({String mode, bool amOpponent})>{};
 
   String get _userId => _client.auth.currentUser!.id;
 
   MatchState? cachedState(String id) => _cache[id];
+  ({String mode, bool amOpponent})? metaOf(String id) => _meta[id];
 
   /// Creates a fresh bot match, caches its state, and returns its id.
   Future<String> startBotMatch() async {
@@ -98,6 +100,7 @@ class MatchRepository {
         .single();
     final id = row['id'] as String;
     _cache[id] = state;
+    _meta[id] = (mode: 'bot', amOpponent: false);
     return id;
   }
 
@@ -109,7 +112,14 @@ class MatchRepository {
     String? opponentAvatarUrl,
     required String challengerName,
   }) async {
-    final state = seedPracticeMatch();
+    // Friend matches skip the local initiative screen (it can't be driven by
+    // both players) and open on the day, challenger to move first.
+    final state = seedPracticeMatch().copyWith(
+      screen: MatchScreen.day,
+      turn: MatchTurn.you,
+      initRolled: true,
+      firstMover: MatchSide.you,
+    );
     await _client.from('matches').insert({
       'player_id': _userId,
       'opponent_id': opponentId,
@@ -129,12 +139,25 @@ class MatchRepository {
   Future<void> declineChallenge(String id) =>
       _client.from('matches').delete().eq('id', id);
 
-  /// Loads a match into the cache; returns its id (for navigation).
+  /// Loads a match into the cache (canonical state + my perspective);
+  /// returns its id (for navigation).
   Future<String> openMatch(String id) async {
-    final row = await _client.from('matches').select('state').eq('id', id).single();
+    final row = await _client
+        .from('matches')
+        .select('state, mode, player_id, opponent_id')
+        .eq('id', id)
+        .single();
     _cache[id] = MatchState.fromJson(Map<String, dynamic>.from(row['state'] as Map));
+    _meta[id] = (
+      mode: row['mode'] as String? ?? 'bot',
+      amOpponent: (row['opponent_id'] as String?) == _userId,
+    );
     return id;
   }
+
+  /// The latest canonical state straight from the row (for realtime apply).
+  MatchState parseState(Map<String, dynamic> row) =>
+      MatchState.fromJson(Map<String, dynamic>.from(row['state'] as Map));
 
   /// Persists the latest state and the denormalized list columns.
   Future<void> saveMatch(String id, MatchState state) async {
