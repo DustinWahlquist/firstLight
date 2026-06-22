@@ -285,11 +285,11 @@ class _Flyway extends StatelessWidget {
                 top: 52,
                 child: CustomPaint(painter: _DashPainter(theme.colorScheme.outlineVariant), size: const Size(double.infinity, 1)),
               ),
-              // destination roost marker
+              // destination roost marker (the migration's end — a tree house)
               Positioned(
                 right: 0,
                 top: 38,
-                child: Icon(Icons.flag_outlined, color: theme.colorScheme.primary, size: 28),
+                child: Icon(Icons.cabin, color: theme.colorScheme.primary, size: 28),
               ),
               // Mara token (above the line)
               AnimatedPositioned(
