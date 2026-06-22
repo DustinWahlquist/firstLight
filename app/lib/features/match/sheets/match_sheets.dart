@@ -93,23 +93,25 @@ class _ActivationSheetState extends State<_ActivationSheet> {
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Fly', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(
-                          'Bank migration speed as distance',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Fly', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'Bank migration speed as distance',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 12),
                     Text(
                       '+${bird.flyKm}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -122,16 +124,19 @@ class _ActivationSheetState extends State<_ActivationSheet> {
               OutlinedButton(
                 onPressed: () => setState(() => _moveOpen = !_moveOpen),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Use a move'),
-                    Text(
-                      'Fight instead — banks no distance',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Fight instead — banks no distance',
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],

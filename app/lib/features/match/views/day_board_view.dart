@@ -6,6 +6,7 @@ import '../../../models/match/match_bird.dart';
 import '../match_controller.dart';
 import '../sheets/match_sheets.dart';
 import '../widgets/match_bird_card.dart';
+import '../widgets/treehouse_icon.dart';
 import '../widgets/watcher_token.dart';
 
 /// The day board: a fixed header + turn banner over a vertical 3-station
@@ -289,7 +290,7 @@ class _Flyway extends StatelessWidget {
               Positioned(
                 right: 0,
                 top: 38,
-                child: Icon(Icons.cabin, color: theme.colorScheme.primary, size: 28),
+                child: TreehouseIcon(color: theme.colorScheme.primary, size: 30),
               ),
               // Mara token (above the line)
               AnimatedPositioned(

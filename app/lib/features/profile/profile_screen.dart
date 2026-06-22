@@ -365,10 +365,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 ListTile(
                   title: const Text('Sign out'),
-                  onTap: () async {
-                    await ref.read(profileRepositoryProvider).signOut();
-                    if (context.mounted) context.go('/login');
-                  },
+                  onTap: () => _confirmSignOut(context),
                 ),
                 Divider(
                   height: 1,
@@ -467,6 +464,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text("You'll need to sign back in to use First Light."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(profileRepositoryProvider).signOut();
+    if (context.mounted) context.go('/login');
   }
 
   void _showDeleteSheet(BuildContext context) {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/shell/bird_flight_icon.dart';
 
-/// A Watcher's mark — a colored circle with a wing glyph. Stands in for the
-/// eventual customizable mark (color + glyph, later a photo). Used as the
-/// migration token on the flyway and as small avatars.
+/// A Watcher's mark — a colored circle with the brand bird-in-flight glyph.
+/// Stands in for the eventual customizable mark (color + glyph, later a
+/// photo). Used as the migration token on the flyway and as small avatars.
 class WatcherToken extends StatelessWidget {
   const WatcherToken({
     super.key,
@@ -22,7 +23,11 @@ class WatcherToken extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       alignment: Alignment.center,
-      child: Icon(Icons.flight, size: size * 0.5, color: glyphColor),
+      child: SizedBox(
+        width: size * 0.62,
+        height: size * 0.62,
+        child: FittedBox(child: BirdFlightIcon(color: glyphColor)),
+      ),
     );
   }
 }
