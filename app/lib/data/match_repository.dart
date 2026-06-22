@@ -85,7 +85,7 @@ class MatchRepository {
 
   /// Creates a fresh bot match, caches its state, and returns its id.
   Future<String> startBotMatch() async {
-    final state = seedPracticeMatch();
+    final state = seedOpeningMatch();
     final row = await _client
         .from('matches')
         .insert({

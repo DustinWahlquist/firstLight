@@ -105,6 +105,74 @@ abstract final class MatchEngine {
         clearFlash: true,
       );
 
+  // ── Opening setup night ──
+
+  /// Setup step: both Watchers draw their opening hands from their decks.
+  static MatchState openingDraw(MatchState s) {
+    final youDrawn = s.youQueue.take(MatchRules.openingHand).toList();
+    final oppDrawn = s.oppQueue.take(MatchRules.openingHand).toList();
+    return s.copyWith(
+      youHand: youDrawn,
+      youQueue: s.youQueue.skip(MatchRules.openingHand).toList(),
+      youDeck: (s.youDeck - youDrawn.length).clamp(0, s.youDeck),
+      drawnIds: youDrawn.map((b) => b.id).toList(),
+      oppHand: oppDrawn,
+      oppQueue: s.oppQueue.skip(MatchRules.openingHand).toList(),
+      oppDeck: (s.oppDeck - oppDrawn.length).clamp(0, s.oppDeck),
+      nightStep: 2,
+    );
+  }
+
+  /// Setup step: deploy your selected birds, the AI deploys its opening flock,
+  /// initiative is rolled, and Day 1 begins.
+  static MatchState openingDeploy(
+    MatchState s, {
+    required int youRoll,
+    required int oppRoll,
+  }) {
+    final deploying = s.youHand
+        .where((b) => s.deploySelected.contains(b.id))
+        .map((b) => b.deployed())
+        .toList();
+    final hand = s.youHand.where((b) => !s.deploySelected.contains(b.id)).toList();
+    final roost = deploying;
+
+    final oppDeploy = (s.oppHand.toList()
+          ..sort((a, b) => b.endurance.compareTo(a.endurance)))
+        .take(MatchRules.deployPerNight)
+        .toList();
+    final oppDeployIds = oppDeploy.map((b) => b.id).toSet();
+    final oppRoost = oppDeploy.map((b) => b.deployed()).toList();
+    final oppHandLeft = s.oppHand.where((b) => !oppDeployIds.contains(b.id)).toList();
+
+    final youTotal = MatchRules.initiativeTotal(
+        roll: youRoll, skillMod: s.youMod, roostSize: roost.length);
+    final oppTotal = MatchRules.initiativeTotal(
+        roll: oppRoll, skillMod: s.oppMod, roostSize: oppRoost.length);
+    final youFirst = MatchRules.youActFirst(
+      youTotal: youTotal,
+      oppTotal: oppTotal,
+      youRoostSize: roost.length,
+      oppRoostSize: oppRoost.length,
+    );
+    final first = youFirst ? MatchSide.you : MatchSide.opp;
+
+    return s.copyWith(
+      screen: MatchScreen.day,
+      youRoost: roost,
+      youHand: hand,
+      oppRoost: oppRoost,
+      oppHand: oppHandLeft,
+      initRolled: true,
+      firstMover: first,
+      turn: youFirst ? MatchTurn.you : MatchTurn.opp,
+      nightStep: 0,
+      drawnIds: const [],
+      deploySelected: const [],
+      setup: false,
+    );
+  }
+
   /// Night step 0→1: every roosting bird loses a day; 0 → exhausted (discard).
   static MatchState applyShift(MatchState s) {
     final you = _shift(s.youRoost);

@@ -41,6 +41,37 @@ void main() {
     });
   });
 
+  group('opening setup night', () {
+    test('a new match starts empty, draws an opening hand, deploys into Day 1', () {
+      var s = seedOpeningMatch();
+      expect(s.setup, isTrue);
+      expect(s.screen, MatchScreen.night);
+      expect(s.youRoost, isEmpty);
+      expect(s.youHand, isEmpty);
+
+      // Draw opening hands.
+      s = MatchEngine.openingDraw(s);
+      expect(s.youHand.length, 5);
+      expect(s.oppHand.length, 5);
+      expect(s.nightStep, 2);
+
+      // Deploy 3, then Day 1 begins.
+      s = MatchEngine.openDeploy(s);
+      s = MatchEngine.toggleDeploy(s, s.youHand[0].id);
+      s = MatchEngine.toggleDeploy(s, s.youHand[1].id);
+      s = MatchEngine.toggleDeploy(s, s.youHand[2].id);
+      s = MatchEngine.openingDeploy(s, youRoll: 12, oppRoll: 8);
+
+      expect(s.screen, MatchScreen.day);
+      expect(s.day, 1);
+      expect(s.setup, isFalse);
+      expect(s.youRoost.length, 3);
+      expect(s.oppRoost.length, 3); // AI deployed too
+      expect(s.youHand.length, 2); // 5 drawn − 3 deployed
+      expect(s.turn, anyOf(MatchTurn.you, MatchTurn.opp));
+    });
+  });
+
   group('friend (async) day', () {
     test('turns alternate correctly across the perspective flip', () {
       // Canonical state = creator's view; creator to move.

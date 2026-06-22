@@ -95,13 +95,22 @@ class NightView extends ConsumerWidget {
     );
   }
 
-  String _ctaLabel(MatchState s) => switch (s.nightStep) {
-        0 => 'Night falls',
-        1 => 'Continue',
+  String _ctaLabel(MatchState s) {
+    if (s.setup) {
+      return switch (s.nightStep) {
+        0 => 'Draw opening hand',
         2 => 'Continue',
-        3 => s.deploySelected.isEmpty ? 'Skip deploy' : 'Deploy ${s.deploySelected.length}',
-        _ => 'Begin Day ${s.day + 1}',
+        _ => s.deploySelected.isEmpty ? 'Deploy birds' : 'Deploy ${s.deploySelected.length} · Day 1',
       };
+    }
+    return switch (s.nightStep) {
+      0 => 'Night falls',
+      1 => 'Continue',
+      2 => 'Continue',
+      3 => s.deploySelected.isEmpty ? 'Skip deploy' : 'Deploy ${s.deploySelected.length}',
+      _ => 'Begin Day ${s.day + 1}',
+    };
+  }
 }
 
 class _NightWaiting extends StatelessWidget {
@@ -154,13 +163,19 @@ class _StepBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (kicker, headline, subtitle) = switch (s.nightStep) {
-      0 => ('NIGHT', 'Night falls', 'The flock settles onto the endurance track.'),
-      1 => ('ENDURANCE TRACK', 'The flock shifts', 'Every bird spends a day of endurance.'),
-      2 => ('REPLENISH', 'Draw', 'Two new birds join your hand.'),
-      3 => ('REINFORCE', 'Deploy your birds', 'Place up to 3 onto the track — free.'),
-      _ => ('A NEW DAY', 'First Light', 'Initiative is re-rolled for the coming day.'),
-    };
+    final (kicker, headline, subtitle) = s.setup
+        ? switch (s.nightStep) {
+            0 => ('SETUP', 'Build your flock', 'Draw your opening hand, then send your birds to the roost.'),
+            2 => ('OPENING HAND', 'Your opening hand', 'Five birds to start the migration.'),
+            _ => ('TAKE FLIGHT', 'Deploy your birds', 'Place up to 3 onto the track — Day 1 begins next.'),
+          }
+        : switch (s.nightStep) {
+            0 => ('NIGHT', 'Night falls', 'The flock settles onto the endurance track.'),
+            1 => ('ENDURANCE TRACK', 'The flock shifts', 'Every bird spends a day of endurance.'),
+            2 => ('REPLENISH', 'Draw', 'Two new birds join your hand.'),
+            3 => ('REINFORCE', 'Deploy your birds', 'Place up to 3 onto the track — free.'),
+            _ => ('A NEW DAY', 'First Light', 'Initiative is re-rolled for the coming day.'),
+          };
     final textColor = light ? Colors.white : Theme.of(context).colorScheme.onSurface;
     final mutedColor = light ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant;
 
@@ -252,7 +267,7 @@ class _StepBody extends StatelessWidget {
                 ),
               const SizedBox(height: 8),
               Text(
-                'Hand is now ${s.youHand.length} of 7. Mara drew 2.',
+                'Hand is now ${s.youHand.length} of 7. Mara drew ${s.setup ? 5 : 2}.',
                 style: TextStyle(color: mutedColor),
               ),
             ],

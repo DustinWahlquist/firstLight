@@ -75,6 +75,7 @@ class MatchState {
     required this.dayOver,
     this.youNightDone = false,
     this.oppNightDone = false,
+    this.setup = false,
   });
 
   final MatchScreen screen;
@@ -128,6 +129,10 @@ class MatchState {
   final bool youNightDone;
   final bool oppNightDone;
 
+  /// The opening setup night: empty roosts, draw an opening hand, deploy,
+  /// then Day 1 begins. Distinguishes it from a regular between-day night.
+  final bool setup;
+
   bool get youHasUntapped => youRoost.any((b) => !b.tapped);
   bool get oppHasUntapped => oppRoost.any((b) => !b.tapped);
 
@@ -178,6 +183,7 @@ class MatchState {
       dayOver: dayOver,
       youNightDone: oppNightDone,
       oppNightDone: youNightDone,
+      setup: setup,
     );
   }
 
@@ -217,6 +223,7 @@ class MatchState {
         'dayOver': dayOver,
         'youNightDone': youNightDone,
         'oppNightDone': oppNightDone,
+        'setup': setup,
         // shiftReport / dawnInit / flash are transient — not persisted.
       };
 
@@ -256,6 +263,7 @@ class MatchState {
         dayOver: json['dayOver'] as bool? ?? false,
         youNightDone: json['youNightDone'] as bool? ?? false,
         oppNightDone: json['oppNightDone'] as bool? ?? false,
+        setup: json['setup'] as bool? ?? false,
       );
 
   MatchState copyWith({
@@ -290,6 +298,7 @@ class MatchState {
     bool? dayOver,
     bool? youNightDone,
     bool? oppNightDone,
+    bool? setup,
     bool clearFlash = false,
     bool clearShiftReport = false,
     bool clearDawnInit = false,
@@ -328,5 +337,6 @@ class MatchState {
         dayOver: dayOver ?? this.dayOver,
         youNightDone: youNightDone ?? this.youNightDone,
         oppNightDone: oppNightDone ?? this.oppNightDone,
+        setup: setup ?? this.setup,
       );
 }
