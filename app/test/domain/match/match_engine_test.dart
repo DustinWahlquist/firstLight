@@ -64,8 +64,8 @@ void main() {
 
       // Back in the creator's view: their turn again, both banked distance.
       expect(canon.turn, MatchTurn.you);
-      expect(canon.youKm, greaterThan(6200));
-      expect(canon.oppKm, greaterThan(6800));
+      expect(canon.youKm, 900); // flew the Peregrine
+      expect(canon.oppKm, 900);
     });
   });
 
@@ -165,7 +165,7 @@ void main() {
       );
       final after = MatchEngine.fly(s, 'y1'); // Peregrine, speed 9
 
-      expect(after.youKm, 6200 + 900);
+      expect(after.youKm, 900);
       expect(after.youRoost.firstWhere((b) => b.id == 'y1').tapped, isTrue);
       expect(after.flewCount, 1);
       expect(after.flash!.km, 900);
@@ -202,7 +202,7 @@ void main() {
       final s = seedPracticeMatch().copyWith(screen: MatchScreen.day, turn: MatchTurn.opp);
       final after = MatchEngine.opponentFly(s);
       // o1 Bar-tailed Godwit speed 9 is highest.
-      expect(after.oppKm, 6800 + 900);
+      expect(after.oppKm, 900);
       expect(after.oppRoost.firstWhere((b) => b.id == 'o1').tapped, isTrue);
     });
   });

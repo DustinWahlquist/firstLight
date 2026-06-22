@@ -1,10 +1,8 @@
 import '../../models/match/match_bird.dart';
 import 'match_state.dart';
 
-/// A starting match against the AI opponent "Mara", seeded mid-race so the
-/// practice match shows every phase quickly. Mirrors the design prototype's
-/// opening state. When real async matches arrive, this is replaced by state
-/// fetched from the server.
+/// A fresh match against the AI opponent "Mara": both Watchers start at 0 km
+/// with a deployed opening flock, an opening hand, and an empty discard pile.
 MatchState seedPracticeMatch() {
   MatchBird b(String id, String name, String sci, int level, int speed,
           int endurance, [int? daysLeft, bool starter = false]) =>
@@ -23,8 +21,8 @@ MatchState seedPracticeMatch() {
     screen: MatchScreen.initiative,
     turn: MatchTurn.lock,
     day: 1,
-    youKm: 6200,
-    oppKm: 6800,
+    youKm: 0,
+    oppKm: 0,
     youRoost: [
       b('y1', 'Peregrine Falcon', 'Falco peregrinus', 4, 9, 1, 1),
       b('y2', 'Arctic Tern', 'Sterna paradisaea', 3, 8, 2, 2),
@@ -44,10 +42,7 @@ MatchState seedPracticeMatch() {
       b('h5', 'Backyard Sparrow', 'Passer domesticus', 1, 2, 2, null, true),
     ],
     youDeck: 41,
-    youDiscard: [
-      b('d1', 'House Finch', 'Haemorhous mexicanus', 1, 3, 2).copyWith(reason: 'exhausted'),
-      b('d2', 'Mourning Dove', 'Zenaida macroura', 2, 4, 3).copyWith(reason: 'exhausted'),
-    ],
+    youDiscard: const [],
     youQueue: [
       b('q1', 'Osprey', 'Pandion haliaetus', 4, 7, 2),
       b('q2', 'Whimbrel', 'Numenius phaeopus', 3, 8, 2),
@@ -62,11 +57,7 @@ MatchState seedPracticeMatch() {
       b('oh4', 'Black-bellied Plover', 'Pluvialis squatarola', 3, 7, 2),
     ],
     oppDeck: 39,
-    oppDiscard: [
-      b('od1', 'Killdeer', 'Charadrius vociferus', 2, 5, 3).copyWith(reason: 'exhausted'),
-      b('od2', 'Spotted Sandpiper', 'Actitis macularius', 2, 5, 2).copyWith(reason: 'exhausted'),
-      b('od3', 'Willet', 'Tringa semipalmata', 3, 6, 2).copyWith(reason: 'exhausted'),
-    ],
+    oppDiscard: const [],
     oppQueue: [
       b('p1', 'Hudsonian Godwit', 'Limosa haemastica', 3, 8, 2),
       b('p2', 'Sanderling', 'Calidris alba', 2, 6, 2),
