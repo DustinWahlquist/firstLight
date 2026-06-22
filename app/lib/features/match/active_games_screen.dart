@@ -13,17 +13,34 @@ final matchesListProvider = FutureProvider.autoDispose<List<MatchSummary>>(
 /// Loads a match (bot or friend) into the controller's cache and opens the
 /// board. The controller reads the cached perspective + mode.
 Future<void> openMatchById(BuildContext context, WidgetRef ref, String id) async {
-  await ref.read(matchRepositoryProvider).openMatch(id);
-  ref.read(activeMatchIdProvider.notifier).state = id;
-  if (context.mounted) await context.push('/match');
-  ref.invalidate(matchesListProvider);
+  try {
+    await ref.read(matchRepositoryProvider).openMatch(id);
+    ref.read(activeMatchIdProvider.notifier).state = id;
+    if (context.mounted) await context.push('/match');
+    ref.invalidate(matchesListProvider);
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open match: $e')),
+      );
+    }
+  }
 }
 
 Future<void> startBotMatch(BuildContext context, WidgetRef ref) async {
-  final id = await ref.read(matchRepositoryProvider).startBotMatch();
-  ref.read(activeMatchIdProvider.notifier).state = id;
-  if (context.mounted) await context.push('/match');
-  ref.invalidate(matchesListProvider);
+  try {
+    final id = await ref.read(matchRepositoryProvider).startBotMatch();
+    ref.read(activeMatchIdProvider.notifier).state = id;
+    if (context.mounted) await context.push('/match');
+    ref.invalidate(matchesListProvider);
+  } catch (e, st) {
+    debugPrint('startBotMatch failed: $e\n$st');
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start match: $e')),
+      );
+    }
+  }
 }
 
 class ActiveGamesScreen extends ConsumerStatefulWidget {
