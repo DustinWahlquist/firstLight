@@ -104,33 +104,37 @@ class MatchRepository {
     return id;
   }
 
-  /// Challenges a friend: creates a pending friend match. [challengerName] is
-  /// the current user's display name (shown to the opponent).
-  Future<void> challengeFriend({
+  /// Challenges a friend: creates a pending friend match and returns its id.
+  /// [challengerName] is the current user's display name (shown to the
+  /// opponent). The match opens on the setup night — the challenger builds
+  /// their flock first, the opponent builds theirs on accept, then Day 1.
+  Future<String> challengeFriend({
     required String opponentId,
     required String opponentName,
     String? opponentAvatarUrl,
     required String challengerName,
   }) async {
-    // Friend matches skip the local initiative screen (it can't be driven by
-    // both players) and open on the day, challenger to move first.
-    final state = seedPracticeMatch().copyWith(
-      screen: MatchScreen.day,
-      turn: MatchTurn.you,
-      initRolled: true,
-      firstMover: MatchSide.you,
-    );
-    await _client.from('matches').insert({
-      'player_id': _userId,
-      'opponent_id': opponentId,
-      'mode': 'friend',
-      'opponent_name': opponentName,
-      'opponent_avatar_url': opponentAvatarUrl,
-      'challenger_name': challengerName,
-      'status': 'pending',
-      'turn': state.turn.name,
-      'state': state.toJson(),
-    });
+    // Empty roosts, 0 km; the challenger (creator = "you") builds first.
+    final state = seedOpeningMatch().copyWith(turn: MatchTurn.you);
+    final row = await _client
+        .from('matches')
+        .insert({
+          'player_id': _userId,
+          'opponent_id': opponentId,
+          'mode': 'friend',
+          'opponent_name': opponentName,
+          'opponent_avatar_url': opponentAvatarUrl,
+          'challenger_name': challengerName,
+          'status': 'pending',
+          'turn': state.turn.name,
+          'state': state.toJson(),
+        })
+        .select('id')
+        .single();
+    final id = row['id'] as String;
+    _cache[id] = state;
+    _meta[id] = (mode: 'friend', amOpponent: false);
+    return id;
   }
 
   Future<void> acceptChallenge(String id) =>

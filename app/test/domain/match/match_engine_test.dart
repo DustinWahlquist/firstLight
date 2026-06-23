@@ -51,24 +51,59 @@ void main() {
 
       // Draw opening hands.
       s = MatchEngine.openingDraw(s);
-      expect(s.youHand.length, 5);
-      expect(s.oppHand.length, 5);
+      expect(s.youHand.length, MatchRules.openingHand);
+      expect(s.oppHand.length, MatchRules.openingHand);
       expect(s.nightStep, 2);
 
-      // Deploy 3, then Day 1 begins.
+      // Deploy one bird, then Day 1 begins.
       s = MatchEngine.openDeploy(s);
       s = MatchEngine.toggleDeploy(s, s.youHand[0].id);
-      s = MatchEngine.toggleDeploy(s, s.youHand[1].id);
-      s = MatchEngine.toggleDeploy(s, s.youHand[2].id);
       s = MatchEngine.openingDeploy(s, youRoll: 12, oppRoll: 8);
 
       expect(s.screen, MatchScreen.day);
       expect(s.day, 1);
       expect(s.setup, isFalse);
-      expect(s.youRoost.length, 3);
-      expect(s.oppRoost.length, 3); // AI deployed too
-      expect(s.youHand.length, 2); // 5 drawn − 3 deployed
+      expect(s.youRoost.length, 1);
+      expect(s.oppRoost.length, 1); // AI deployed one too
+      expect(s.youHand.length, MatchRules.openingHand - 1); // 5 drawn − 1 deployed
       expect(s.turn, anyOf(MatchTurn.you, MatchTurn.opp));
+    });
+  });
+
+  group('friend (async) opening night', () {
+    test('challenger builds first, opponent second, then Day 1 begins', () {
+      // Challenger's canonical view: setup night, their turn.
+      var canon = seedOpeningMatch().copyWith(turn: MatchTurn.you);
+      expect(canon.setup, isTrue);
+
+      // Challenger draws + deploys one → hands the build to the opponent.
+      canon = MatchEngine.openingDrawFriend(canon);
+      expect(canon.youHand.length, MatchRules.openingHand);
+      canon = MatchEngine.openDeploy(canon);
+      canon = MatchEngine.toggleDeploy(canon, canon.youHand.first.id);
+      canon = MatchEngine.openingDeployFriend(canon, youRoll: 10, oppRoll: 10);
+      expect(canon.youNightDone, isTrue);
+      expect(canon.turn, MatchTurn.opp);
+      expect(canon.setup, isTrue); // still building — the opponent hasn't gone
+      expect(canon.youRoost.length, 1);
+
+      // Opponent's client loads and flips: their turn, challenger already done.
+      var opp = canon.flip();
+      expect(opp.turn, MatchTurn.you);
+      expect(opp.oppNightDone, isTrue);
+      opp = MatchEngine.openingDrawFriend(opp);
+      opp = MatchEngine.openDeploy(opp);
+      opp = MatchEngine.toggleDeploy(opp, opp.youHand.first.id);
+      opp = MatchEngine.openingDeployFriend(opp, youRoll: 14, oppRoll: 6);
+
+      // Both flocks built → Day 1 begins, setup over, one bird each.
+      expect(opp.screen, MatchScreen.day);
+      expect(opp.setup, isFalse);
+      expect(opp.day, 1);
+      expect(opp.initRolled, isTrue);
+      expect(opp.youRoost.length, 1);
+      expect(opp.oppRoost.length, 1); // the challenger's bird, from opp's view
+      expect(opp.turn, anyOf(MatchTurn.you, MatchTurn.opp));
     });
   });
 
@@ -260,15 +295,14 @@ void main() {
       expect(drawn.drawnIds.length, 1);
     });
 
-    test('deploy moves up to 3 selected birds into the roost at full endurance', () {
+    test('deploy moves the selected bird into the roost at full endurance', () {
       var s = seedPracticeMatch();
       s = MatchEngine.openDeploy(s.copyWith(nightStep: 2));
       s = MatchEngine.toggleDeploy(s, 'h1');
-      s = MatchEngine.toggleDeploy(s, 'h2');
       final before = s.youRoost.length;
       final after = MatchEngine.confirmDeploy(s, youRoll: 10, oppRoll: 10);
 
-      expect(after.youRoost.length, before + 2);
+      expect(after.youRoost.length, before + 1);
       expect(after.youHand.any((b) => b.id == 'h1'), isFalse);
       final crane = after.youRoost.firstWhere((b) => b.id == 'h1');
       expect(crane.daysLeft, crane.endurance);
@@ -277,12 +311,12 @@ void main() {
       expect(after.dawnInit, isNotNull);
     });
 
-    test('deploy selection caps at 3', () {
+    test('deploy is single-select: a cap of 1, newest pick wins', () {
       var s = MatchEngine.openDeploy(seedPracticeMatch().copyWith(nightStep: 2));
       for (final id in ['h1', 'h2', 'h3', 'h4']) {
         s = MatchEngine.toggleDeploy(s, id);
       }
-      expect(s.deploySelected.length, 3);
+      expect(s.deploySelected, ['h4']);
     });
 
     test('beginNextDay advances the day and hands initiative to the first mover', () {

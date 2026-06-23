@@ -144,16 +144,28 @@ class MatchController extends AutoDisposeNotifier<MatchState> {
   // ── Night ──
   void nightAdvance() {
     if (state.setup) {
-      switch (state.nightStep) {
-        case 0:
-          _emit(MatchEngine.openingDraw(state));
-        case 2:
-          _emit(MatchEngine.openDeploy(state));
-        case 3:
-          _emit(MatchEngine.openingDeploy(state, youRoll: _d20(), oppRoll: _d20()));
-          if (!isFriend && state.turn == MatchTurn.opp) {
-            _schedule(_dawnOppDelay, _opponentFly);
-          }
+      if (isFriend) {
+        // Each player builds their own flock, one at a time.
+        switch (state.nightStep) {
+          case 0:
+            _emit(MatchEngine.openingDrawFriend(state));
+          case 2:
+            _emit(MatchEngine.openDeploy(state));
+          case 3:
+            _emit(MatchEngine.openingDeployFriend(state, youRoll: _d20(), oppRoll: _d20()));
+        }
+      } else {
+        switch (state.nightStep) {
+          case 0:
+            _emit(MatchEngine.openingDraw(state));
+          case 2:
+            _emit(MatchEngine.openDeploy(state));
+          case 3:
+            _emit(MatchEngine.openingDeploy(state, youRoll: _d20(), oppRoll: _d20()));
+            if (state.turn == MatchTurn.opp) {
+              _schedule(_dawnOppDelay, _opponentFly);
+            }
+        }
       }
       return;
     }

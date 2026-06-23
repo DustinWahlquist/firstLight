@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../domain/match/match_rules.dart';
 import '../../../domain/match/match_state.dart';
 import '../../../models/match/match_bird.dart';
 import '../match_controller.dart';
@@ -15,12 +16,16 @@ class NightView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(matchControllerProvider);
     final ctrl = ref.read(matchControllerProvider.notifier);
+    final isFriend = ctrl.isFriend;
 
     // In a friend match, once you've taken your night you wait for the
     // opponent to take theirs; the next day arrives via realtime.
-    if (ctrl.isFriend && (s.youNightDone || s.turn != MatchTurn.you)) {
-      return const _NightWaiting();
+    if (isFriend && (s.youNightDone || s.turn != MatchTurn.you)) {
+      return _NightWaiting(setup: s.setup);
     }
+
+    // The opening deploy needs a bird chosen before it can start the day.
+    final deployBlocked = s.setup && s.nightStep == 3 && s.deploySelected.isEmpty;
 
     final step = s.nightStep;
     final dawn = step == 4;
@@ -74,6 +79,7 @@ class NightView extends ConsumerWidget {
                     child: _StepBody(
                       s: s,
                       light: light,
+                      isFriend: isFriend,
                       onToggleDeploy: ctrl.toggleDeploy,
                     ),
                   ),
@@ -81,9 +87,9 @@ class NightView extends ConsumerWidget {
                     height: 52,
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: ctrl.nightAdvance,
+                      onPressed: deployBlocked ? null : ctrl.nightAdvance,
                       style: FilledButton.styleFrom(shape: const StadiumBorder()),
-                      child: Text(_ctaLabel(s)),
+                      child: Text(_ctaLabel(s, isFriend)),
                     ),
                   ),
                 ],
@@ -95,29 +101,38 @@ class NightView extends ConsumerWidget {
     );
   }
 
-  String _ctaLabel(MatchState s) {
+  String _ctaLabel(MatchState s, bool isFriend) {
     if (s.setup) {
       return switch (s.nightStep) {
         0 => 'Draw opening hand',
         2 => 'Continue',
-        _ => s.deploySelected.isEmpty ? 'Deploy birds' : 'Deploy ${s.deploySelected.length} · Day 1',
+        // In a friend match the first builder hands off; only the second
+        // builder (opponent already done) actually starts Day 1.
+        _ => isFriend && !s.oppNightDone ? 'Confirm your flock' : 'Deploy & start Day 1',
       };
     }
     return switch (s.nightStep) {
       0 => 'Night falls',
       1 => 'Continue',
       2 => 'Continue',
-      3 => s.deploySelected.isEmpty ? 'Skip deploy' : 'Deploy ${s.deploySelected.length}',
+      3 => s.deploySelected.isEmpty ? 'Skip deploy' : 'Deploy bird',
       _ => 'Begin Day ${s.day + 1}',
     };
   }
 }
 
 class _NightWaiting extends StatelessWidget {
-  const _NightWaiting();
+  const _NightWaiting({this.setup = false});
+  final bool setup;
 
   @override
   Widget build(BuildContext context) {
+    final title = setup ? 'Flock set' : 'Night';
+    final body = setup
+        ? 'Your flock is built. Waiting for your opponent to build theirs — '
+            'the race begins once they’re ready.'
+        : 'Your flock is set. Waiting for your opponent to take their '
+            'night — the next day begins once they’re done.';
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -136,15 +151,14 @@ class _NightWaiting extends StatelessWidget {
                 const Icon(Icons.nightlight_outlined, color: MatchPalette.sunNight, size: 48),
                 const SizedBox(height: 16),
                 Text(
-                  'Night',
+                  title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Your flock is set. Waiting for your opponent to take their '
-                  'night — the next day begins once they’re done.',
+                Text(
+                  body,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),
@@ -156,24 +170,36 @@ class _NightWaiting extends StatelessWidget {
 }
 
 class _StepBody extends StatelessWidget {
-  const _StepBody({required this.s, required this.light, required this.onToggleDeploy});
+  const _StepBody({
+    required this.s,
+    required this.light,
+    required this.isFriend,
+    required this.onToggleDeploy,
+  });
   final MatchState s;
   final bool light;
+  final bool isFriend;
   final void Function(String id) onToggleDeploy;
 
   @override
   Widget build(BuildContext context) {
     final (kicker, headline, subtitle) = s.setup
         ? switch (s.nightStep) {
-            0 => ('SETUP', 'Build your flock', 'Draw your opening hand, then send your birds to the roost.'),
+            0 => ('SETUP', 'Build your flock', 'Draw your opening hand, then send a bird to the roost.'),
             2 => ('OPENING HAND', 'Your opening hand', 'Five birds to start the migration.'),
-            _ => ('TAKE FLIGHT', 'Deploy your birds', 'Place up to 3 onto the track — Day 1 begins next.'),
+            _ => (
+                'TAKE FLIGHT',
+                'Deploy your bird',
+                isFriend
+                    ? 'Place one bird onto the track to start your flock.'
+                    : 'Place one bird onto the track — Day 1 begins next.',
+              ),
           }
         : switch (s.nightStep) {
             0 => ('NIGHT', 'Night falls', 'The flock settles onto the endurance track.'),
             1 => ('ENDURANCE TRACK', 'The flock shifts', 'Every bird spends a day of endurance.'),
-            2 => ('REPLENISH', 'Draw', 'Two new birds join your hand.'),
-            3 => ('REINFORCE', 'Deploy your birds', 'Place up to 3 onto the track — free.'),
+            2 => ('REPLENISH', 'Draw', 'A new bird joins your hand.'),
+            3 => ('REINFORCE', 'Deploy a bird', 'Add one bird to your flock — free.'),
             _ => ('A NEW DAY', 'First Light', 'Initiative is re-rolled for the coming day.'),
           };
     final textColor = light ? Colors.white : Theme.of(context).colorScheme.onSurface;
@@ -267,7 +293,10 @@ class _StepBody extends StatelessWidget {
                 ),
               const SizedBox(height: 8),
               Text(
-                'Hand is now ${s.youHand.length} of 7. Mara drew ${s.setup ? 5 : 2}.',
+                isFriend
+                    ? 'Hand is now ${s.youHand.length} of 7.'
+                    : 'Hand is now ${s.youHand.length} of 7. '
+                        'Mara drew ${s.setup ? MatchRules.openingHand : MatchRules.drawPerNight}.',
                 style: TextStyle(color: mutedColor),
               ),
             ],
@@ -364,10 +393,13 @@ class _DeployGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final label = MatchRules.deployPerNight == 1
+        ? (selected.isEmpty ? 'Choose one bird to deploy' : 'Bird selected')
+        : '${selected.length} of ${MatchRules.deployPerNight} selected';
     return Column(
       children: [
         Text(
-          '${selected.length} of 3 selected',
+          label,
           style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
         ),
         const SizedBox(height: 12),

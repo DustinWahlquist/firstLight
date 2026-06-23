@@ -8,12 +8,12 @@ abstract final class MatchRules {
   /// Opening hand drawn on the setup night.
   static const int openingHand = 5;
 
-  /// Night draw count and hand cap.
-  static const int drawPerNight = 2;
+  /// Night draw count and hand cap. One card drawn per night.
+  static const int drawPerNight = 1;
   static const int handCap = 7;
 
-  /// Max birds deployed per Night.
-  static const int deployPerNight = 3;
+  /// Birds deployed per Night — a single bird, including the opening night.
+  static const int deployPerNight = 1;
 
   static int flyKm(int speed) => speed * 100;
 

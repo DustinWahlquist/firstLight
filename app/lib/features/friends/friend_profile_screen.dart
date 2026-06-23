@@ -7,6 +7,7 @@ import '../../domain/game_rules.dart';
 import '../../models/bird_card.dart';
 import '../../models/friendship.dart';
 import '../../models/user_profile.dart';
+import '../match/match_controller.dart';
 
 class FriendProfileScreen extends ConsumerStatefulWidget {
   const FriendProfileScreen({super.key, required this.profile});
@@ -59,18 +60,17 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
   Future<void> _challenge() async {
     final me = Supabase.instance.client.auth.currentUser;
     final myName = (me?.userMetadata?['display_name'] as String?) ?? me?.email ?? 'A Watcher';
-    await ref.read(matchRepositoryProvider).challengeFriend(
+    final id = await ref.read(matchRepositoryProvider).challengeFriend(
           opponentId: widget.profile.id,
           opponentName: widget.profile.displayName ?? widget.profile.username ?? 'Watcher',
           opponentAvatarUrl: widget.profile.avatarUrl,
           challengerName: myName,
         );
-    if (mounted) {
-      setState(() => _challengeSent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Challenge sent — find it in Games')),
-      );
-    }
+    if (!mounted) return;
+    // Build your flock now; your opponent builds theirs when they accept.
+    setState(() => _challengeSent = true);
+    ref.read(activeMatchIdProvider.notifier).state = id;
+    context.push('/match');
   }
 
   @override

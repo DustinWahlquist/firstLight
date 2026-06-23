@@ -158,12 +158,8 @@ class _GameTile extends ConsumerWidget {
   }
 
   void _open(BuildContext context, WidgetRef ref) {
-    if (game.isOutgoingInvite) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Waiting for ${game.otherName} to accept')),
-      );
-      return;
-    }
+    // Outgoing invites are openable too: the challenger builds their flock
+    // (or sees the waiting screen) while the opponent decides.
     openMatchById(context, ref, game.id);
   }
 

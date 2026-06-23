@@ -199,7 +199,10 @@ class _CompactMaraStrip extends StatelessWidget {
           const SizedBox(width: 8),
           Text('Mara', style: theme.textTheme.titleSmall),
           const SizedBox(width: 6),
-          Text('${s.oppRoost.length} in the roost', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            '${s.oppRoost.length} in roost · ${s.oppHand.length} in hand',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
           const Spacer(),
           Text(
             'PULL TO EXPAND ▲',

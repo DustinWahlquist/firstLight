@@ -173,6 +173,74 @@ abstract final class MatchEngine {
     );
   }
 
+  // ── Friend (two-human, async) opening night ──
+  //
+  // Each player builds their flock one at a time. The challenger (creator)
+  // goes first; when they finish, the setup hands to the opponent, and the
+  // second builder rolls initiative for Day 1.
+
+  /// Friend setup: draw the opening hand for the local player only.
+  static MatchState openingDrawFriend(MatchState s) {
+    final drawn = s.youQueue.take(MatchRules.openingHand).toList();
+    return s.copyWith(
+      youHand: drawn,
+      youQueue: s.youQueue.skip(MatchRules.openingHand).toList(),
+      youDeck: (s.youDeck - drawn.length).clamp(0, s.youDeck),
+      drawnIds: drawn.map((b) => b.id).toList(),
+      nightStep: 2,
+    );
+  }
+
+  /// Friend setup: deploy the local player's chosen bird into their (empty)
+  /// roost and mark them done. If the opponent has already built their flock,
+  /// roll initiative and begin Day 1; otherwise hand the setup to the opponent.
+  static MatchState openingDeployFriend(
+    MatchState s, {
+    required int youRoll,
+    required int oppRoll,
+  }) {
+    final deploying = s.youHand
+        .where((b) => s.deploySelected.contains(b.id))
+        .map((b) => b.deployed())
+        .toList();
+    final hand = s.youHand.where((b) => !s.deploySelected.contains(b.id)).toList();
+    final roost = deploying; // opening night: the roost starts empty
+
+    final base = s.copyWith(
+      youRoost: roost,
+      youHand: hand,
+      youNightDone: true,
+      deploySelected: const [],
+    );
+
+    if (s.oppNightDone) {
+      // Both flocks are built — roll initiative and start Day 1 (no day bump).
+      final youTotal = MatchRules.initiativeTotal(
+          roll: youRoll, skillMod: s.youMod, roostSize: roost.length);
+      final oppTotal = MatchRules.initiativeTotal(
+          roll: oppRoll, skillMod: s.oppMod, roostSize: s.oppRoost.length);
+      final youFirst = MatchRules.youActFirst(
+        youTotal: youTotal,
+        oppTotal: oppTotal,
+        youRoostSize: roost.length,
+        oppRoostSize: s.oppRoost.length,
+      );
+      return base.copyWith(
+        screen: MatchScreen.day,
+        initRolled: true,
+        firstMover: youFirst ? MatchSide.you : MatchSide.opp,
+        turn: youFirst ? MatchTurn.you : MatchTurn.opp,
+        nightStep: 0,
+        drawnIds: const [],
+        youNightDone: false,
+        oppNightDone: false,
+        setup: false,
+      );
+    }
+    // Hand the build to the opponent; you wait.
+    return base.copyWith(turn: MatchTurn.opp, nightStep: 0, drawnIds: const []);
+  }
+
   /// Night step 0→1: every roosting bird loses a day; 0 → exhausted (discard).
   static MatchState applyShift(MatchState s) {
     final you = _shift(s.youRoost);
@@ -187,7 +255,7 @@ abstract final class MatchEngine {
     );
   }
 
-  /// Night step 1→2: draw 2, capped at a hand of 7 (overflow forfeited).
+  /// Night step 1→2: draw for the night, capped at a hand of 7.
   static MatchState applyDraw(MatchState s) {
     final take = (MatchRules.handCap - s.youHand.length)
         .clamp(0, MatchRules.drawPerNight)
@@ -213,13 +281,18 @@ abstract final class MatchEngine {
   static MatchState openDeploy(MatchState s) =>
       s.copyWith(nightStep: 3, deploySelected: const []);
 
-  /// Toggles a hand card in the deploy selection (max 3).
+  /// Toggles a hand card in the deploy selection. Capped at
+  /// [MatchRules.deployPerNight]; at the cap, picking another card replaces the
+  /// oldest selection (so a cap of 1 behaves like a single-select).
   static MatchState toggleDeploy(MatchState s, String id) {
     final sel = s.deploySelected;
     if (sel.contains(id)) {
       return s.copyWith(deploySelected: sel.where((x) => x != id).toList());
     }
-    if (sel.length >= MatchRules.deployPerNight) return s;
+    if (sel.length >= MatchRules.deployPerNight) {
+      final trimmed = sel.sublist(1); // drop the oldest, keep room for the new
+      return s.copyWith(deploySelected: [...trimmed, id]);
+    }
     return s.copyWith(deploySelected: [...sel, id]);
   }
 
@@ -237,7 +310,7 @@ abstract final class MatchEngine {
     final hand = s.youHand.where((b) => !s.deploySelected.contains(b.id)).toList();
     final roost = [...s.youRoost, ...deploying];
 
-    // Bot AI deploys up to 3 of its longest-lived birds from hand.
+    // Bot AI deploys its longest-lived bird(s) from hand.
     final oppDeploy = (s.oppHand.toList()
           ..sort((a, b) => b.endurance.compareTo(a.endurance)))
         .take(MatchRules.deployPerNight)
