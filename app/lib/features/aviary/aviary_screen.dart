@@ -1,20 +1,23 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
-import '../../data/geocoding_service.dart';
 import '../../data/vision_service.dart';
 import '../../domain/game_rules.dart';
 import '../../domain/log_catch_use_case.dart';
 import '../../models/bird_card.dart';
+import '../../models/bulk_parse.dart';
 import '../../models/parse_result.dart';
 import 'aviary_providers.dart';
+import 'bulk_log_controller.dart';
+import 'bulk_log_review_screen.dart';
+import 'bulk_log_summary_screen.dart';
 import 'log_catch_controller.dart';
 import 'screenshot_picker.dart';
 import 'widgets/bird_card_tile.dart';
+import 'widgets/location_dialog.dart';
 
 // Declaration order is the sort menu's display order.
 enum _SortOrder { alphabetical, level, lastCatch, dateAdded }
@@ -292,79 +295,19 @@ class AviaryScreen extends ConsumerWidget {
     PickedScreenshot picked,
   ) async {
     final controller = ref.read(logCatchControllerProvider.notifier);
-    final file = picked.file;
-
     try {
-      ParseResult parseResult;
+      final ParseOutcome outcome;
       try {
-        parseResult = await controller.parseScreenshot(file);
+        outcome = await controller.parseScreenshot(picked.file);
       } on UnverifiableScreenshotException {
         return; // The rejection banner explains it.
       }
-
-      // Reject duplicates and future dates before asking for a location.
-      final rejection = await controller.precheck(parseResult);
-      if (rejection != null) {
-        if (rejection is LogCatchDuplicate &&
-            picked.assetId != null &&
-            context.mounted) {
-          await _offerScreenshotDeletion(
-            context,
-            picked.assetId!,
-            alreadyLogged: true,
-          );
-        }
-        return;
-      }
-
-      if (parseResult.latitude == null && context.mounted) {
-        final manual = await showDialog<ManualLocation>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => _LocationDialog(
-            initialLocation: parseResult.location,
-            geocoder: ref.read(geocodingServiceProvider),
-          ),
-        );
-        if (manual != null && manual.name.isNotEmpty) {
-          parseResult = parseResult.copyWith(
-            location: manual.name,
-            latitude: manual.latitude,
-            longitude: manual.longitude,
-          );
-        }
-      }
-
       if (!context.mounted) return;
-      final result = await controller.submit(parseResult, file);
-
-      // Offer cleanup whenever the screenshot's catch is in the aviary —
-      // including duplicates, where it was logged previously.
-      final inAviary = result is LogCatchNewLifer ||
-          result is LogCatchXpAwarded ||
-          result is LogCatchDuplicate;
-      if (inAviary && picked.assetId != null && context.mounted) {
-        await _offerScreenshotDeletion(
-          context,
-          picked.assetId!,
-          alreadyLogged: result is LogCatchDuplicate,
-        );
-      }
-
-      if (!context.mounted) return;
-      switch (result) {
-        case LogCatchNewLifer(:final card):
-          context.push('/card-reveal', extra: card);
-        case LogCatchXpAwarded(leveledUp: true, :final before, :final after):
-          context.push('/level-up', extra: (oldCard: before, newCard: after));
-        case LogCatchXpAwarded(:final before, :final after):
-          await showDialog<void>(
-            context: context,
-            builder: (_) => _XpGainedDialog(before: before, after: after),
-          );
-        case LogCatchDuplicate():
-        case LogCatchFutureDated():
-          break;
+      switch (outcome) {
+        case ParsedSingle(:final result):
+          await _submitSingle(context, ref, picked, result);
+        case ParsedList(:final bulk):
+          await _submitBulk(context, ref, picked, bulk);
       }
     } catch (e) {
       if (context.mounted) {
@@ -372,6 +315,130 @@ class AviaryScreen extends ConsumerWidget {
           SnackBar(content: Text('Failed to parse screenshot: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _submitSingle(
+    BuildContext context,
+    WidgetRef ref,
+    PickedScreenshot picked,
+    ParseResult parseResult,
+  ) async {
+    final controller = ref.read(logCatchControllerProvider.notifier);
+    final file = picked.file;
+
+    // Reject duplicates and future dates before asking for a location.
+    final rejection = await controller.precheck(parseResult);
+    if (rejection != null) {
+      if (rejection is LogCatchDuplicate &&
+          picked.assetId != null &&
+          context.mounted) {
+        await _offerScreenshotDeletion(context, picked.assetId!, alreadyLogged: true);
+      }
+      return;
+    }
+
+    if (parseResult.latitude == null && context.mounted) {
+      final manual = await showDialog<ManualLocation>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LocationDialog(
+          initialLocation: parseResult.location,
+          geocoder: ref.read(geocodingServiceProvider),
+          note: "We couldn't pinpoint this location on the map. Search for the "
+              'place so this catch shows up on your map.',
+        ),
+      );
+      if (manual != null && manual.name.isNotEmpty) {
+        parseResult = parseResult.copyWith(
+          location: manual.name,
+          latitude: manual.latitude,
+          longitude: manual.longitude,
+        );
+      }
+    }
+
+    if (!context.mounted) return;
+    final result = await controller.submit(parseResult, file);
+
+    // Offer cleanup whenever the screenshot's catch is in the aviary —
+    // including duplicates, where it was logged previously.
+    final inAviary = result is LogCatchNewLifer ||
+        result is LogCatchXpAwarded ||
+        result is LogCatchDuplicate;
+    if (inAviary && picked.assetId != null && context.mounted) {
+      await _offerScreenshotDeletion(
+        context,
+        picked.assetId!,
+        alreadyLogged: result is LogCatchDuplicate,
+      );
+    }
+
+    if (!context.mounted) return;
+    switch (result) {
+      case LogCatchNewLifer(:final card):
+        context.push('/card-reveal', extra: card);
+      case LogCatchXpAwarded(leveledUp: true, :final before, :final after):
+        context.push('/level-up', extra: (oldCard: before, newCard: after));
+      case LogCatchXpAwarded(:final before, :final after):
+        await showDialog<void>(
+          context: context,
+          builder: (_) => _XpGainedDialog(before: before, after: after),
+        );
+      case LogCatchDuplicate():
+      case LogCatchFutureDated():
+        break;
+    }
+  }
+
+  /// Bulk flow for a Merlin "Identify" list: one location for all birds,
+  /// a review of what will/won't be logged, then a summary.
+  Future<void> _submitBulk(
+    BuildContext context,
+    WidgetRef ref,
+    PickedScreenshot picked,
+    BulkParse bulk,
+  ) async {
+    final manual = await showDialog<ManualLocation>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LocationDialog(
+        initialLocation: bulk.location,
+        geocoder: ref.read(geocodingServiceProvider),
+        title: 'Where were these?',
+        note: 'This location will be used for all the birds in this screenshot.',
+      ),
+    );
+    if (manual == null || !context.mounted) return;
+    final location = manual.name.isNotEmpty ? manual.name : bulk.location;
+
+    final plan = await ref.read(bulkLogUseCaseProvider).plan(bulk);
+    if (!context.mounted) return;
+
+    final summary = await Navigator.of(context).push<BulkSummary>(
+      MaterialPageRoute(
+        builder: (_) => BulkLogReviewScreen(
+          plan: plan,
+          date: bulk.date,
+          location: location,
+          latitude: manual.latitude,
+          longitude: manual.longitude,
+          screenshot: picked.file,
+        ),
+      ),
+    );
+    if (summary == null || !context.mounted) return;
+
+    if (picked.assetId != null && summary.logged > 0) {
+      await _offerScreenshotDeletion(context, picked.assetId!);
+    }
+    if (!context.mounted) return;
+
+    final again = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => BulkLogSummaryScreen(summary: summary)),
+    );
+    if (again == true && context.mounted) {
+      await _pickImage(context, ref);
     }
   }
 
@@ -404,149 +471,6 @@ class AviaryScreen extends ConsumerWidget {
     if (delete == true) {
       await deleteScreenshotAsset(assetId);
     }
-  }
-}
-
-typedef ManualLocation = ({String name, double? latitude, double? longitude});
-
-class _LocationDialog extends StatefulWidget {
-  const _LocationDialog({required this.initialLocation, required this.geocoder});
-  final String initialLocation;
-  final GeocodingService geocoder;
-
-  @override
-  State<_LocationDialog> createState() => _LocationDialogState();
-}
-
-class _LocationDialogState extends State<_LocationDialog> {
-  late final TextEditingController _controller;
-  Timer? _debounce;
-  List<PlaceSuggestion> _suggestions = [];
-  bool _searching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialLocation);
-    if (widget.initialLocation.trim().isNotEmpty) {
-      _search(widget.initialLocation);
-    }
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onChanged(String text) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () => _search(text));
-  }
-
-  Future<void> _search(String query) async {
-    if (query.trim().length < 3) {
-      if (mounted) setState(() => _suggestions = []);
-      return;
-    }
-    setState(() => _searching = true);
-    final results = await widget.geocoder.search(query);
-    if (!mounted) return;
-    // Ignore stale results that arrive after the text has changed again.
-    if (_controller.text != query) return;
-    setState(() {
-      _suggestions = results;
-      _searching = false;
-    });
-  }
-
-  void _pickSuggestion(PlaceSuggestion s) => Navigator.of(context)
-      .pop((name: s.name, latitude: s.latitude, longitude: s.longitude));
-
-  void _saveTyped() => Navigator.of(context)
-      .pop((name: _controller.text.trim(), latitude: null, longitude: null));
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AlertDialog(
-      title: const Text('Where was this?'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "We couldn't pinpoint this location on the map. Search for the place so this catch shows up on your map.",
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Location',
-                hintText: 'e.g. Central Park, New York',
-                border: const OutlineInputBorder(),
-                suffixIcon: _searching
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : null,
-              ),
-              onChanged: _onChanged,
-              onSubmitted: (_) => _saveTyped(),
-            ),
-            if (_suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 220),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _suggestions.length,
-                  itemBuilder: (context, i) {
-                    final s = _suggestions[i];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      leading: Icon(
-                        Icons.place_outlined,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      title: Text(s.name, style: theme.textTheme.bodyMedium),
-                      onTap: () => _pickSuggestion(s),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(
-            (name: widget.initialLocation, latitude: null, longitude: null),
-          ),
-          child: const Text('Skip'),
-        ),
-        FilledButton(
-          onPressed: _saveTyped,
-          child: const Text('Save'),
-        ),
-      ],
-    );
   }
 }
 

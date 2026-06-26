@@ -8,6 +8,7 @@ import '../data/profile_repository.dart';
 import '../data/social_repository.dart';
 import '../data/usage_events_repository.dart';
 import '../data/vision_service.dart';
+import '../domain/bulk_log_use_case.dart';
 import '../domain/log_catch_use_case.dart';
 
 /// Infrastructure wiring only. Feature-level state providers live in their
@@ -61,4 +62,8 @@ final matchRepositoryProvider = Provider<MatchRepository>(
 
 final logCatchUseCaseProvider = Provider<LogCatchUseCase>(
   (ref) => LogCatchUseCase(aviary: ref.watch(aviaryRepositoryProvider)),
+);
+
+final bulkLogUseCaseProvider = Provider<BulkLogUseCase>(
+  (ref) => BulkLogUseCase(aviary: ref.watch(aviaryRepositoryProvider)),
 );

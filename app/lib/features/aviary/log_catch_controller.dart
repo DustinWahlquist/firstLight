@@ -36,9 +36,10 @@ class LogCatchController extends Notifier<CatchFlowState> {
 
   void dismissBanner() => state = _idle;
 
-  /// Parses the screenshot. Rethrows on failure so the screen can surface
-  /// the error; an unverifiable screenshot shows the rejection banner.
-  Future<ParseResult> parseScreenshot(File file) async {
+  /// Parses the screenshot — a single-bird detail or a Merlin list. Rethrows
+  /// on failure so the screen can surface the error; an unverifiable
+  /// screenshot shows the rejection banner.
+  Future<ParseOutcome> parseScreenshot(File file) async {
     state = _loading;
     try {
       return await ref.read(visionServiceProvider).parseScreenshot(file);

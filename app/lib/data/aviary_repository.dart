@@ -120,4 +120,15 @@ class AviaryRepository {
     await _client.storage.from('screenshots').upload(path, file);
     return _client.storage.from('screenshots').getPublicUrl(path);
   }
+
+  /// Backfills flavor text + art for newly-logged species (bulk "log now,
+  /// enrich later"). The edge function generates/caches content and writes it
+  /// onto the caller's cards.
+  Future<void> enrichSpecies(List<({String speciesName, String scientificName})> species) =>
+      _client.functions.invoke('enrich-catches', body: {
+        'species': [
+          for (final s in species)
+            {'species_name': s.speciesName, 'scientific_name': s.scientificName},
+        ],
+      });
 }
