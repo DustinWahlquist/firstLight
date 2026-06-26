@@ -13,10 +13,11 @@ class SocialRepository {
   String get _userId => _client.auth.currentUser!.id;
 
   Future<List<FeedEvent>> fetchFeed() async {
+    // Own + friends' activity (RLS scopes it), so you can see pecks and
+    // scribbles on your own catches too.
     final rows = await _client
         .from('feed_events')
         .select()
-        .neq('user_id', _userId)
         .order('created_at', ascending: false)
         .limit(50);
     if (rows.isEmpty) return [];
