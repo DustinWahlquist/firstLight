@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/config.dart';
 import '../../core/providers.dart';
 import '../../domain/game_rules.dart';
+import '../../domain/match/match_rules.dart';
 import '../../domain/sighting_rarity.dart';
 import '../../models/bird_card.dart';
 import '../../models/catch_log.dart';
@@ -40,11 +41,29 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
     if (mounted && url != null) setState(() => _lineArtUrl = url);
   }
 
+  Future<void> _toggleDeck({required bool currentlyIn, required int deckCount}) async {
+    final repo = ref.read(aviaryRepositoryProvider);
+    if (!currentlyIn && deckCount >= MatchRules.deckCapacity) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Deck is full — you must remove a bird before you can add this one.',
+          ),
+        ),
+      );
+      return;
+    }
+    await repo.setInDeck(widget.card.id, !currentlyIn);
+    ref.invalidate(deckProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final card = widget.card;
     final catchLogs = ref.watch(catchLogsProvider(card.id));
+    final isOwn = widget.ownerName == null;
+    final deck = ref.watch(deckProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -65,6 +84,15 @@ class _BirdDetailScreenState extends ConsumerState<BirdDetailScreen> {
         children: [
           Center(child: _TradingCard(card: card, lineArtUrl: _lineArtUrl)),
           const SizedBox(height: 16),
+          if (isOwn) ...[
+            _DeckButton(
+              cardId: card.id,
+              deck: deck,
+              onToggle: (currentlyIn, count) =>
+                  _toggleDeck(currentlyIn: currentlyIn, deckCount: count),
+            ),
+            const SizedBox(height: 16),
+          ],
           _SectionCard(
             label: 'CATCH INFO',
             child: _CatchInfoGrid(card: card),
@@ -657,6 +685,36 @@ class _CatchLogEntry extends StatelessWidget {
       SightingRarity.rare => theme.colorScheme.primary,
     };
     return (color, label);
+  }
+}
+
+class _DeckButton extends StatelessWidget {
+  const _DeckButton({required this.cardId, required this.deck, required this.onToggle});
+  final String cardId;
+  final AsyncValue<List<BirdCard>> deck;
+  final void Function(bool currentlyIn, int count) onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = deck.valueOrNull;
+    final count = cards?.length ?? 0;
+    final inDeck = cards?.any((c) => c.id == cardId) ?? false;
+    final loading = cards == null && deck.isLoading;
+
+    if (inDeck) {
+      return OutlinedButton.icon(
+        onPressed: loading ? null : () => onToggle(true, count),
+        icon: const Icon(Icons.check_circle, size: 18),
+        label: const Text('In your deck · Remove'),
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+      );
+    }
+    return FilledButton.icon(
+      onPressed: loading ? null : () => onToggle(false, count),
+      icon: const Icon(Icons.add, size: 18),
+      label: const Text('Add to deck'),
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+    );
   }
 }
 

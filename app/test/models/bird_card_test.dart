@@ -22,6 +22,7 @@ void main() {
     'line_art_url': 'https://example.com/art.svg',
     'last_caught_at': '2026-06-08T00:00:00.000',
     'created_at': '2026-06-01T12:00:00.000',
+    'in_deck': false,
   };
 
   test('fromJson/toJson round-trips every field', () {

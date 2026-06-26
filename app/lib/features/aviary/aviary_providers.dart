@@ -21,3 +21,8 @@ final catchLogsProvider =
     FutureProvider.family<List<CatchLog>, String>((ref, cardId) {
   return ref.watch(aviaryRepositoryProvider).fetchCatchLogs(cardId);
 });
+
+/// The signed-in user's deck — the cards they've flagged for match play.
+final deckProvider = FutureProvider<List<BirdCard>>((ref) {
+  return ref.watch(aviaryRepositoryProvider).fetchDeck();
+});

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 import '../../data/match_repository.dart';
+import 'deck_tab.dart';
 import 'match_controller.dart';
 
 final matchesListProvider = FutureProvider.autoDispose<List<MatchSummary>>(
@@ -50,12 +51,16 @@ class ActiveGamesScreen extends ConsumerStatefulWidget {
   ConsumerState<ActiveGamesScreen> createState() => _ActiveGamesScreenState();
 }
 
-class _ActiveGamesScreenState extends ConsumerState<ActiveGamesScreen> {
+class _ActiveGamesScreenState extends ConsumerState<ActiveGamesScreen>
+    with SingleTickerProviderStateMixin {
   RealtimeChannel? _channel;
+  late final TabController _tabs;
 
   @override
   void initState() {
     super.initState();
+    // setState on tab change so the FAB shows only on the Open games tab.
+    _tabs = TabController(length: 2, vsync: this)..addListener(() => setState(() {}));
     // Live-refresh the list when any of my matches change (new challenge,
     // an accept, or an opponent's move once live play ships).
     _channel = Supabase.instance.client
@@ -73,6 +78,7 @@ class _ActiveGamesScreenState extends ConsumerState<ActiveGamesScreen> {
 
   @override
   void dispose() {
+    _tabs.dispose();
     if (_channel != null) Supabase.instance.client.removeChannel(_channel!);
     super.dispose();
   }
@@ -80,39 +86,52 @@ class _ActiveGamesScreenState extends ConsumerState<ActiveGamesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final games = ref.watch(matchesListProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Games'),
         backgroundColor: Colors.transparent,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: theme.colorScheme.outlineVariant),
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: const [Tab(text: 'Open games'), Tab(text: 'Your deck')],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => startBotMatch(context, ref),
-        icon: const Icon(Icons.smart_toy_outlined),
-        label: const Text('Play a bot'),
-        backgroundColor: theme.colorScheme.primaryContainer,
-        foregroundColor: theme.colorScheme.onPrimaryContainer,
+      floatingActionButton: _tabs.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: () => startBotMatch(context, ref),
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: const Text('Play a bot'),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            )
+          : null,
+      body: TabBarView(
+        controller: _tabs,
+        children: const [_OpenGamesList(), DeckTab()],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(matchesListProvider),
-        child: games.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (list) {
-            if (list.isEmpty) return _EmptyState();
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _GameTile(game: list[i]),
-            );
-          },
-        ),
+    );
+  }
+}
+
+class _OpenGamesList extends ConsumerWidget {
+  const _OpenGamesList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final games = ref.watch(matchesListProvider);
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(matchesListProvider),
+      child: games.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (list) {
+          if (list.isEmpty) return _EmptyState();
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            itemCount: list.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _GameTile(game: list[i]),
+          );
+        },
       ),
     );
   }

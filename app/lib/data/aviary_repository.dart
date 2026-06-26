@@ -26,6 +26,25 @@ class AviaryRepository {
     return rows.map(BirdCard.fromJson).toList();
   }
 
+  /// The signed-in user's deck — the cards flagged for match play.
+  Future<List<BirdCard>> fetchDeck() async {
+    final rows = await _client
+        .from('bird_cards')
+        .select()
+        .eq('user_id', _userId)
+        .eq('in_deck', true)
+        .order('created_at', ascending: false);
+    return rows.map(BirdCard.fromJson).toList();
+  }
+
+  /// Adds or removes a card from the deck. Routed through a SECURITY DEFINER
+  /// RPC because bird_cards has no client UPDATE policy (game state stays
+  /// server-authoritative); the function scopes the write to the caller's card.
+  Future<void> setInDeck(String cardId, bool inDeck) => _client.rpc(
+        'set_card_in_deck',
+        params: {'p_card_id': cardId, 'p_in_deck': inDeck},
+      );
+
   Future<BirdCard?> fetchCard(String speciesName) async {
     final rows = await _client
         .from('bird_cards')

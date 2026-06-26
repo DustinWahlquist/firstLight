@@ -5,6 +5,9 @@ abstract final class MatchRules {
   /// Distance to win the race.
   static const int winKm = 10000;
 
+  /// Maximum birds a player's deck can hold.
+  static const int deckCapacity = 30;
+
   /// Opening hand drawn on the setup night.
   static const int openingHand = 5;
 

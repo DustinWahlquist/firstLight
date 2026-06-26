@@ -19,6 +19,7 @@ class BirdCard {
     this.lineArtUrl,
     this.lastCaughtAt,
     required this.createdAt,
+    this.inDeck = false,
   });
 
   final String id;
@@ -40,8 +41,16 @@ class BirdCard {
   final String? lineArtUrl;
   final DateTime? lastCaughtAt;
   final DateTime createdAt;
+  final bool inDeck;
 
-  BirdCard copyWith({int? xp, int? level, int? catchCount, String? screenshotUrl, String? lineArtUrl}) =>
+  BirdCard copyWith({
+    int? xp,
+    int? level,
+    int? catchCount,
+    String? screenshotUrl,
+    String? lineArtUrl,
+    bool? inDeck,
+  }) =>
       BirdCard(
         id: id,
         userId: userId,
@@ -62,6 +71,7 @@ class BirdCard {
         lineArtUrl: lineArtUrl ?? this.lineArtUrl,
         lastCaughtAt: lastCaughtAt,
         createdAt: createdAt,
+        inDeck: inDeck ?? this.inDeck,
       );
 
   factory BirdCard.fromJson(Map<String, dynamic> json) => BirdCard(
@@ -86,6 +96,7 @@ class BirdCard {
             ? DateTime.parse(json['last_caught_at'] as String)
             : null,
         createdAt: DateTime.parse(json['created_at'] as String),
+        inDeck: json['in_deck'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -108,5 +119,6 @@ class BirdCard {
         'line_art_url': lineArtUrl,
         'last_caught_at': lastCaughtAt?.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
+        'in_deck': inDeck,
       };
 }
