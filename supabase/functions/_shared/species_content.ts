@@ -158,15 +158,17 @@ export async function geocodeLocation(
   }
 }
 
-/// Resolves a date string to its most recent past occurrence — Merlin's list
-/// header often omits the year (e.g. "June 21"), so a model may stamp it with
-/// the current year and push it into the future. ISO date string in/out.
+/// Resolves a date to its most recent past occurrence. Merlin's list header
+/// omits the year (e.g. "June 21") and a model's year guess is unreliable, so
+/// we keep only the month/day and choose the most recent past year — a catch is
+/// never in the future. ISO date string in/out.
 export function resolvePastDate(dateStr: string): string {
   const parsed = new Date(dateStr + 'T00:00:00Z');
-  const today = new Date();
-  today.setUTCHours(23, 59, 59, 999);
-  if (parsed.getTime() > today.getTime()) {
-    parsed.setUTCFullYear(parsed.getUTCFullYear() - 1);
-  }
-  return parsed.toISOString().slice(0, 10);
+  const month = parsed.getUTCMonth();
+  const day = parsed.getUTCDate();
+  const now = new Date();
+  let year = now.getUTCFullYear();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  if (Date.UTC(year, month, day) > todayUtc) year -= 1;
+  return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
 }
