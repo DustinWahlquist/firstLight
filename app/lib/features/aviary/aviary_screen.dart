@@ -33,6 +33,8 @@ class AviaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final aviary = ref.watch(aviaryProvider);
+    final deckIds = ref.watch(deckProvider).valueOrNull?.map((c) => c.id).toSet() ??
+        const <String>{};
     final flowState = ref.watch(logCatchControllerProvider);
     final catchState = flowState.status;
     final sortOrder = ref.watch(_sortOrderProvider);
@@ -148,6 +150,7 @@ class AviaryScreen extends ConsumerWidget {
                                 itemBuilder: (context, i) => BirdCardTile(
                                   card: sorted[i],
                                   isGrid: true,
+                                  inDeck: deckIds.contains(sorted[i].id),
                                   onTap: () => context.push('/bird-detail', extra: (card: sorted[i], ownerName: null)),
                                 ),
                               );
@@ -157,6 +160,7 @@ class AviaryScreen extends ConsumerWidget {
                               itemCount: sorted.length,
                               itemBuilder: (context, i) => BirdCardTile(
                                 card: sorted[i],
+                                inDeck: deckIds.contains(sorted[i].id),
                                 onTap: () => context.push('/bird-detail', extra: (card: sorted[i], ownerName: null)),
                               ),
                             );

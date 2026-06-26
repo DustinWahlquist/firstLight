@@ -4,22 +4,50 @@ import '../../../domain/game_rules.dart';
 import '../../../models/bird_card.dart';
 
 class BirdCardTile extends StatelessWidget {
-  const BirdCardTile({super.key, required this.card, this.onTap, this.isGrid = false});
+  const BirdCardTile({
+    super.key,
+    required this.card,
+    this.onTap,
+    this.isGrid = false,
+    this.inDeck = false,
+  });
 
   final BirdCard card;
   final VoidCallback? onTap;
   final bool isGrid;
+  final bool inDeck;
 
   @override
   Widget build(BuildContext context) {
-    return isGrid ? _GridCard(card: card, onTap: onTap) : _ListCard(card: card, onTap: onTap);
+    return isGrid
+        ? _GridCard(card: card, onTap: onTap, inDeck: inDeck)
+        : _ListCard(card: card, onTap: onTap, inDeck: inDeck);
+  }
+}
+
+/// Small "this bird is in your deck" marker.
+class _DeckBadge extends StatelessWidget {
+  const _DeckBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Icon(Icons.style, size: 13, color: theme.colorScheme.onPrimaryContainer),
+    );
   }
 }
 
 class _ListCard extends StatelessWidget {
-  const _ListCard({required this.card, this.onTap});
+  const _ListCard({required this.card, this.onTap, this.inDeck = false});
   final BirdCard card;
   final VoidCallback? onTap;
+  final bool inDeck;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +66,12 @@ class _ListCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(card.speciesName, style: theme.textTheme.titleMedium),
+              Row(
+                children: [
+                  Expanded(child: Text(card.speciesName, style: theme.textTheme.titleMedium)),
+                  if (inDeck) ...[const SizedBox(width: 8), const _DeckBadge()],
+                ],
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -83,9 +116,10 @@ class _ListCard extends StatelessWidget {
 }
 
 class _GridCard extends StatelessWidget {
-  const _GridCard({required this.card, this.onTap});
+  const _GridCard({required this.card, this.onTap, this.inDeck = false});
   final BirdCard card;
   final VoidCallback? onTap;
+  final bool inDeck;
 
   @override
   Widget build(BuildContext context) {
@@ -104,15 +138,23 @@ class _GridCard extends StatelessWidget {
           children: [
             // Art area
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: card.lineArtUrl != null
-                    ? SvgPicture.network(
-                        card.lineArtUrl!,
-                        fit: BoxFit.contain,
-                        placeholderBuilder: (_) => _StripedBackground(theme: theme),
-                      )
-                    : _StripedBackground(theme: theme),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: card.lineArtUrl != null
+                          ? SvgPicture.network(
+                              card.lineArtUrl!,
+                              fit: BoxFit.contain,
+                              placeholderBuilder: (_) => _StripedBackground(theme: theme),
+                            )
+                          : _StripedBackground(theme: theme),
+                    ),
+                  ),
+                  if (inDeck)
+                    const Positioned(top: 6, right: 6, child: _DeckBadge()),
+                ],
               ),
             ),
             // Info area
