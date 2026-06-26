@@ -7,23 +7,31 @@ import '../../models/bulk_parse.dart';
 import '../../models/parse_result.dart';
 import 'aviary_providers.dart';
 
+/// A repeat catch that gained XP — carries before/after so the summary can
+/// animate the XP bar like the single-catch flow.
+class BulkRepeat {
+  const BulkRepeat({required this.before, required this.after});
+  final BirdCard before;
+  final BirdCard after;
+  int get gained => after.xp - before.xp;
+  bool get leveledUp => after.level > before.level;
+}
+
 /// Outcome of a bulk commit, for the summary screen.
 class BulkSummary {
   const BulkSummary({
     required this.newLifers,
     required this.repeats,
-    required this.leveledUp,
-    required this.xpAwarded,
     required this.duplicates,
   });
 
   final List<BirdCard> newLifers;
-  final int repeats; // repeat catches that gained XP
-  final int leveledUp;
-  final int xpAwarded;
+  final List<BulkRepeat> repeats;
   final int duplicates; // server rejected as already-logged today
 
-  int get logged => newLifers.length + repeats;
+  int get logged => newLifers.length + repeats.length;
+  int get xpAwarded => repeats.fold(0, (s, r) => s + r.gained);
+  int get leveledUp => repeats.where((r) => r.leveledUp).length;
 }
 
 /// Progress while committing (done/total), or null when idle.
@@ -51,7 +59,8 @@ class BulkLogController extends Notifier<BulkCommitProgress?> {
     final url = await aviary.uploadScreenshot(screenshot);
 
     final newLifers = <BirdCard>[];
-    var repeats = 0, leveledUp = 0, xp = 0, duplicates = 0;
+    final repeats = <BulkRepeat>[];
+    var duplicates = 0;
 
     state = (done: 0, total: birds.length);
     for (var i = 0; i < birds.length; i++) {
@@ -75,11 +84,13 @@ class BulkLogController extends Notifier<BulkCommitProgress?> {
           case 'new_lifer':
             newLifers.add(BirdCard.fromJson(Map<String, dynamic>.from(outcome['card'] as Map)));
           case 'xp_awarded':
-            repeats++;
-            xp += (outcome['xp_awarded'] as int?) ?? 0;
             final after = BirdCard.fromJson(Map<String, dynamic>.from(outcome['card'] as Map));
-            final prev = (outcome['previous_level'] as int?) ?? after.level;
-            if (after.level > prev) leveledUp++;
+            final delta = (outcome['xp_awarded'] as int?) ?? 0;
+            final prevLevel = (outcome['previous_level'] as int?) ?? after.level;
+            repeats.add(BulkRepeat(
+              before: after.copyWith(xp: after.xp - delta, level: prevLevel),
+              after: after,
+            ));
           case 'duplicate':
             duplicates++;
         }
@@ -104,8 +115,6 @@ class BulkLogController extends Notifier<BulkCommitProgress?> {
     return BulkSummary(
       newLifers: newLifers,
       repeats: repeats,
-      leveledUp: leveledUp,
-      xpAwarded: xp,
       duplicates: duplicates,
     );
   }

@@ -399,6 +399,10 @@ class AviaryScreen extends ConsumerWidget {
     PickedScreenshot picked,
     BulkParse bulk,
   ) async {
+    // The bulk flow has its own progress UI; clear the single-flow parsing
+    // overlay so it doesn't linger behind the review screen.
+    ref.read(logCatchControllerProvider.notifier).dismissBanner();
+
     final manual = await showDialog<ManualLocation>(
       context: context,
       barrierDismissible: false,
